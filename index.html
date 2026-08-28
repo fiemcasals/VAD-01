@@ -260,11 +260,22 @@
         // Calcular Total Global
         function updateGlobalTotal() {
             let totalGeneral = 0;
+            // Forzar lectura de localStorage
+            try {
+                const raw = localStorage.getItem('appData_presupuesto');
+                if (raw) appData = JSON.parse(raw);
+            } catch(e) {}
+            
             for (let category in appData) {
                 if (appData[category] && appData[category].categorias) {
                     appData[category].categorias.forEach(cat => {
                         cat.items.forEach(item => {
-                            totalGeneral += item.precio;
+                            let qty = 1;
+                            if (item.cant) {
+                                const match = item.cant.toString().match(/\d+/);
+                                if (match) qty = parseInt(match[0], 10);
+                            }
+                            totalGeneral += (item.precio * qty);
                         });
                     });
                 }

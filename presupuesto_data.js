@@ -262,9 +262,19 @@ window.resetData = function() {
     }
 }
 
+function parseQuantity(str) {
+    if (!str) return 1;
+    const match = str.toString().match(/\d+/);
+    return match ? parseInt(match[0], 10) : 1;
+}
+
 function saveData() {
     localStorage.setItem('appData_presupuesto', JSON.stringify(appData));
-    updateTotalBadge(); // Actulizar badge superior al vuelo
+    updateTotalBadge(); // Actualizar badge superior al vuelo
+    // Actualizar el total global en el padre (index.html) si estamos en iframe
+    if (window.parent && typeof window.parent.updateGlobalTotal === 'function') {
+        window.parent.updateGlobalTotal();
+    }
 }
 
 function updateTotalBadge() {
@@ -273,7 +283,7 @@ function updateTotalBadge() {
     let totalGeneral = 0;
     data.categorias.forEach(cat => {
         cat.items.forEach(item => {
-            totalGeneral += item.precio;
+            totalGeneral += (item.precio * parseQuantity(item.cant));
         });
     });
     document.getElementById('total-badge').innerText = `$${totalGeneral.toFixed(2)}`;
@@ -296,7 +306,8 @@ window.renderizarPresupuesto = function(idCategoria) {
         let subtotal = 0;
 
         cat.items.forEach((item, itemIndex) => {
-            subtotal += item.precio;
+            let itemTotal = item.precio * parseQuantity(item.cant);
+            subtotal += itemTotal;
             
             if (isEditMode) {
                 itemsHtml += `
