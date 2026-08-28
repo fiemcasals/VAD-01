@@ -67,7 +67,7 @@ const DEFAULT_PRESUPUESTOS = {
             {
                 nombre: "Navegación y Localización",
                 items: [
-                    { cant: "x1", nombre: "LiDAR 3D Estado Sólido (Exteriores 20m)", precio: 550.00, link: "https://www.robotshop.com/products/solid-state-3d-lidar" },
+                    { cant: "x1", nombre: "LiDAR 3D Estado Sólido Industrial (Exteriores 20m)", precio: 950.00, link: "https://www.robotshop.com/products/solid-state-3d-lidar" },
                     { cant: "x1", nombre: "u-blox NEO-M9N GNSS USB", precio: 55.00, link: "https://holybro.com/products/m9n-gps" }
                 ]
             },
