@@ -3,222 +3,325 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Presupuesto Electrónica | Minimal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>VAD - Launchpad Central</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-dark: #09090b;
             --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-hover: rgba(56, 189, 248, 0.1);
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
-            --accent-blue: #3b82f6;
+            --accent-cyan: #38bdf8;
             --accent-green: #10b981;
+            --nav-height: 70px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
 
         body {
             background-color: var(--bg-dark);
             color: var(--text-primary);
-            min-height: 100vh;
+            overflow: hidden; /* Prevents all scrolling */
+            width: 100vw;
+            height: 100vh;
+            background-image: linear-gradient(rgba(9, 9, 11, 0.2), rgba(9, 9, 11, 0.35)), url('foto_robot.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        /* --- TOP NAVIGATION BAR --- */
+        #top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: var(--nav-height);
+            background: rgba(9, 9, 11, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 0 20px;
+            z-index: 2000;
+            transform: translateY(-100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        #top-nav.visible {
+            transform: translateY(0);
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-btn:hover {
+            color: var(--text-primary);
+            background: var(--glass-bg);
+            border-color: var(--glass-border);
+        }
+
+        .nav-btn.active {
+            color: var(--accent-cyan);
+            background: var(--glass-hover);
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+
+        .nav-btn.home-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--glass-border);
+            color: var(--text-primary);
+            margin-right: 15px;
+        }
+
+        .nav-btn.home-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* --- HOME VIEW (LAUNCHPAD) --- */
+        #home-view {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             padding: 2rem;
-            background-image: 
-                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.4s ease, visibility 0.4s;
+            z-index: 1000;
         }
 
-        .nav-tabs {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .nav-tabs a {
-            text-decoration: none;
-            color: var(--text-secondary);
-            padding: 0.5rem 1.5rem;
-            border-radius: 100px;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            transition: all 0.2s;
-            font-size: 0.9rem;
-        }
-
-        .nav-tabs a:hover {
-            color: var(--text-primary);
-            border-color: rgba(255,255,255,0.2);
-        }
-
-        .nav-tabs a.active {
-            background: rgba(59, 130, 246, 0.1);
-            color: var(--accent-blue);
-            border-color: rgba(59, 130, 246, 0.2);
-        }
-
-        .container {
-            width: 100%;
-            max-width: 1000px;
+        #home-view.hidden {
+            opacity: 0;
+            visibility: hidden;
         }
 
         header {
             text-align: center;
-            margin-bottom: 4rem;
+            margin-bottom: 2.5rem;
+            animation: fadeInDown 0.8s ease-out;
         }
 
         h1 {
-            font-size: 3rem;
-            font-weight: 300;
-            letter-spacing: -1px;
+            font-size: 3.5rem;
+            font-weight: 800;
+            letter-spacing: -1.5px;
             margin-bottom: 0.5rem;
-        }
-
-        h1 span {
-            font-weight: 600;
-            background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+            background: linear-gradient(135deg, #fff, #38bdf8);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .total-badge {
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        .global-total {
+            margin-top: 1.5rem;
             display: inline-block;
-            margin-top: 1rem;
-            padding: 0.75rem 2rem;
+            padding: 0.75rem 2.5rem;
             border-radius: 100px;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.2);
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
             color: var(--accent-green);
-            font-size: 1.5rem;
+            font-size: 1.8rem;
+            font-weight: 700;
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
+            animation: fadeInDown 0.8s ease-out 0.1s backwards;
+        }
+
+        .grid-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem;
+            max-width: 1200px;
+            animation: fadeInUp 0.8s ease-out 0.2s backwards;
+        }
+
+        .big-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 1.2rem 2rem;
+            border-radius: 100px;
+            text-decoration: none;
+            color: white;
+            font-size: 1.1rem;
             font-weight: 600;
-            letter-spacing: 1px;
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .category-card {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 2rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             backdrop-filter: blur(10px);
-            transition: transform 0.3s ease, border-color 0.3s ease;
+            cursor: pointer;
         }
 
-        .category-card:hover {
+        .big-btn:hover {
             transform: translateY(-5px);
-            border-color: rgba(255,255,255,0.1);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.2);
         }
 
-        .category-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--glass-border);
+        /* Specific Brand Colors on Hover */
+        .big-btn.sim-final:hover { border-color: #38bdf8; background: rgba(56, 189, 248, 0.1); color: #38bdf8; }
+        .big-btn.sim-est:hover { border-color: #a855f7; background: rgba(168, 85, 247, 0.1); color: #c084fc; }
+        .big-btn.p-elec:hover { border-color: #f59e0b; background: rgba(245, 158, 11, 0.1); color: #fbbf24; }
+        .big-btn.p-mec:hover { border-color: #10b981; background: rgba(16, 185, 129, 0.1); color: #34d399; }
+        .big-btn.p-sof:hover { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); color: #f87171; }
+
+        /* --- APP VIEW (IFRAME CONTAINER) --- */
+        #app-view {
+            position: absolute;
+            top: var(--nav-height);
+            left: 0;
+            width: 100vw;
+            height: calc(100vh - var(--nav-height));
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s;
+            z-index: 500;
+            background: var(--bg-dark);
         }
 
-        .category-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--text-primary);
+        #app-view.visible {
+            opacity: 1;
+            visibility: visible;
         }
 
-        .category-subtotal {
-            font-size: 1.1rem;
-            color: var(--accent-blue);
-            font-weight: 600;
+        #main-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
         }
 
-        .item-list {
-            list-style: none;
-        }
-
-        .item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-            font-size: 0.95rem;
-        }
-
-        .item:last-child {
-            margin-bottom: 0;
-        }
-
-        .item-name {
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .item-qty {
-            font-size: 0.75rem;
-            background: rgba(255,255,255,0.1);
-            padding: 2px 6px;
-            border-radius: 4px;
-            color: var(--text-primary);
-        }
-
-        .item-price {
-            color: var(--text-primary);
-        }
-
-        .item-name a {
-            color: inherit;
-            text-decoration: none;
-            transition: color 0.2s, opacity 0.2s;
-        }
-        
-        .item-name a:hover {
-            color: var(--accent-blue);
-            opacity: 0.8;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
 
-    <div class="nav-tabs">
-        <a href="index.html" class="active">Electrónica</a>
-        <a href="presupuesto_mecanica.html">Mecánica</a>
-        <a href="presupuesto_informatica.html">Informática</a>
-    </div>
+    <!-- TOP NAV BAR -->
+    <nav id="top-nav">
+        <button class="nav-btn home-btn" onclick="goHome()">🏠 Inicio</button>
+        <button class="nav-btn" data-target="visor_final.html" onclick="loadApp('visor_final.html', this)">🚀 Prototipo Final</button>
+        <button class="nav-btn" data-target="visor_estructural.html" onclick="loadApp('visor_estructural.html', this)">⚙️ Estructura</button>
+        <button class="nav-btn" data-target="presupuesto.html" onclick="loadApp('presupuesto.html', this)">⚡ P. Electrónica</button>
+        <button class="nav-btn" data-target="presupuesto_mecanica.html" onclick="loadApp('presupuesto_mecanica.html', this)">🔧 P. Mecánica</button>
+        <button class="nav-btn" data-target="presupuesto_informatica.html" onclick="loadApp('presupuesto_informatica.html', this)">💻 P. Software</button>
+    </nav>
 
-    <div class="container">
+    <!-- HOME LAUNCHPAD -->
+    <div id="home-view">
         <header>
-            <h1>Presupuesto <span id="titulo-span"></span></h1>
-            <div class="total-badge" id="total-badge">$0.00</div>
+            <h1>Proyecto VAD</h1>
+            <div class="subtitle">Vehículo Autónomo de Distribución Industrial</div>
+            <div class="global-total" id="global-total-badge">Calculando...</div>
         </header>
 
-        <div class="grid" id="grid-container">
-            <!-- Inyectado vía JS -->
+        <div class="grid-buttons">
+            <button class="big-btn sim-final" onclick="loadApp('visor_final.html')">🚀 Prototipo Final Integrado</button>
+            <button class="big-btn sim-est" onclick="loadApp('visor_estructural.html')">⚙️ Estructura de Caño</button>
+            <button class="big-btn p-elec" onclick="loadApp('presupuesto.html')">⚡ Presupuesto Electrónica</button>
+            <button class="big-btn p-mec" onclick="loadApp('presupuesto_mecanica.html')">🔧 Presupuesto Mecánica</button>
+            <button class="big-btn p-sof" onclick="loadApp('presupuesto_informatica.html')">💻 Presupuesto Software e IA</button>
         </div>
     </div>
 
-    <!-- Script Maestro de Datos -->
+    <!-- MAIN APP RENDERER -->
+    <div id="app-view">
+        <iframe id="main-frame" src=""></iframe>
+    </div>
+
     <script src="presupuesto_data.js"></script>
     <script>
-        // Renderizar dinámicamente la categoría "electronica"
-        renderizarPresupuesto('electronica');
+        const homeView = document.getElementById('home-view');
+        const appView = document.getElementById('app-view');
+        const topNav = document.getElementById('top-nav');
+        const iframe = document.getElementById('main-frame');
+        const navBtns = document.querySelectorAll('#top-nav .nav-btn:not(.home-btn)');
+
+        // Calcular Total Global
+        function updateGlobalTotal() {
+            let totalGeneral = 0;
+            for (let category in appData) {
+                if (appData[category] && appData[category].categorias) {
+                    appData[category].categorias.forEach(cat => {
+                        cat.items.forEach(item => {
+                            totalGeneral += item.precio;
+                        });
+                    });
+                }
+            }
+            document.getElementById('global-total-badge').innerText = `Presupuesto Total: $${totalGeneral.toFixed(2)}`;
+        }
+        
+        updateGlobalTotal(); // Ejecutar al cargar
+
+        // Escuchar cuando el iframe recarga para actualizar el total (si el usuario editó)
+        iframe.addEventListener('load', () => {
+            try {
+                // Forzar lectura de localStorage de nuevo por si hubo cambios en la otra vista
+                const raw = localStorage.getItem('appData_presupuesto');
+                if (raw) appData = JSON.parse(raw);
+                updateGlobalTotal();
+            } catch(e) {}
+        });
+
+        function loadApp(url, clickedBtn = null) {
+            // Hide home, show app
+            homeView.classList.add('hidden');
+            appView.classList.add('visible');
+            topNav.classList.add('visible');
+
+            // Load iframe content if it's different
+            if (iframe.src.indexOf(url) === -1) {
+                iframe.src = url;
+            }
+
+            // Update active state on nav buttons
+            navBtns.forEach(btn => btn.classList.remove('active'));
+            
+            // Find the correct button to highlight
+            let targetBtn = clickedBtn;
+            if (!targetBtn) {
+                targetBtn = Array.from(navBtns).find(btn => btn.getAttribute('data-target') === url);
+            }
+            if (targetBtn) {
+                targetBtn.classList.add('active');
+            }
+        }
+
+        function goHome() {
+            homeView.classList.remove('hidden');
+            appView.classList.remove('visible');
+            topNav.classList.remove('visible');
+            
+            // Optional: clear iframe to save resources when on home screen
+            // iframe.src = "";
+            navBtns.forEach(btn => btn.classList.remove('active'));
+        }
     </script>
 </body>
 </html>

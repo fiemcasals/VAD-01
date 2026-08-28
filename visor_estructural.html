@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visor 3D Interactivo - Prototipo Estructural</title>
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-panel: rgba(16, 24, 39, 0.85);
+            --border-color: rgba(56, 189, 248, 0.25);
+            --accent-cyan: #38bdf8;
+            --accent-blue: #2563eb;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .top-bar {
+            position: absolute;
+            top: 20px;
+            left: 24px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: var(--bg-panel);
+            backdrop-filter: blur(12px);
+            padding: 12px 24px;
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .badge-pulse {
+            width: 10px;
+            height: 10px;
+            background-color: var(--accent-green);
+            border-radius: 50%;
+            box-shadow: 0 0 12px var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .top-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #fff;
+        }
+
+        .top-subtitle {
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sidebar {
+            position: absolute;
+            top: 20px;
+            right: 24px;
+            width: 360px;
+            max-height: calc(100vh - 40px);
+            z-index: 10;
+            background: var(--bg-panel);
+            backdrop-filter: blur(16px);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .sidebar.collapsed {
+            width: auto;
+            min-width: 250px;
+            padding: 12px 18px;
+            gap: 0;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-arrow {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--accent-cyan);
+            border-radius: 6px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-arrow:hover {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: var(--accent-cyan);
+        }
+
+        #icon-specs-arrow {
+            transition: transform 0.25s ease;
+        }
+
+        .spec-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .spec-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+
+        .spec-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .spec-val {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+            margin-top: 2px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .btn-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 9px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-toggle:hover {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: var(--accent-cyan);
+        }
+
+        .btn-toggle.active {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: var(--accent-cyan);
+            color: #fff;
+        }
+
+        .toggle-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #64748b;
+        }
+
+        .btn-toggle.active .toggle-dot {
+            background: var(--accent-cyan);
+            box-shadow: 0 0 8px var(--accent-cyan);
+        }
+
+        .views-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .btn-view {
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.2s;
+        }
+
+        .btn-view:hover {
+            color: #fff;
+            border-color: var(--accent-cyan);
+            background: rgba(56, 189, 248, 0.12);
+        }
+
+        #info-card {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            width: 320px;
+            background: rgba(14, 165, 233, 0.15);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            border-radius: 12px;
+            padding: 16px;
+            display: none;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #info-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+
+        #info-desc {
+            font-size: 0.76rem;
+            color: #cbd5e1;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        .bottom-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 24px;
+            z-index: 10;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(8px);
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="badge-pulse"></div>
+        <div>
+            <div class="top-title">ROBOT ESTRUCTURAL - PROTOTIPO</div>
+            <div class="top-subtitle">Estructura Tubular • Módulos de Sensores y Control</div>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <div class="sidebar" id="sidebar-panel">
+        <div class="section-title" style="justify-content: space-between; cursor: pointer; margin-bottom: 0;" onclick="toggleAllPanelsCollapse()">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span>📊 Componentes y Control</span>
+            </div>
+            <button class="btn-arrow" id="btn-specs-toggle" title="Ocultar / Mostrar">
+                <svg id="icon-specs-arrow" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </button>
+        </div>
+
+        <div id="sidebar-collapsible-content" style="display: flex; flex-direction: column; gap: 16px; transition: all 0.3s ease;">
+            <div>
+                <div class="section-title" style="font-size: 0.78rem; color: var(--text-muted);">📋 Datos Clave</div>
+                <div id="spec-grid-container" class="spec-grid" style="margin-top: 8px;">
+                    <div class="spec-card">
+                        <div class="spec-label">Estructura</div>
+                        <div class="spec-val">Perfilería Tubular</div>
+                    </div>
+                    <div class="spec-card">
+                        <div class="spec-label">Procesamiento</div>
+                        <div class="spec-val">NVIDIA Jetson</div>
+                    </div>
+                    <div class="spec-card">
+                        <div class="spec-label">Sensores</div>
+                        <div class="spec-val">LIDAR 360° + Estéreo</div>
+                    </div>
+                    <div class="spec-card">
+                        <div class="spec-label">Batería</div>
+                        <div class="spec-val">Li-ion 24V</div>
+                    </div>
+                    <div class="spec-card">
+                        <div class="spec-label">Tracción</div>
+                        <div class="spec-val">2x Hub Traseros</div>
+                    </div>
+                    <div class="spec-card">
+                        <div class="spec-label">Dirección</div>
+                        <div class="spec-val">Giro Loco Delantero</div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="section-title">🎥 Vistas de Cámara</div>
+                <div class="views-row" style="margin-top: 8px;">
+                    <button class="btn-view" onclick="setCameraView('iso')">ISOMÉTRICA</button>
+                    <button class="btn-view" onclick="setCameraView('front')">FRONTAL</button>
+                    <button class="btn-view" onclick="setCameraView('side')">LATERAL</button>
+                    <button class="btn-view" onclick="setCameraView('top')">SUPERIOR</button>
+                </div>
+            </div>
+
+            <div>
+                <div class="section-title">🧩 Capas del Prototipo</div>
+                <div class="control-group" style="margin-top: 8px;">
+                    <div class="btn-toggle active" id="toggle-chassis" onclick="toggleLayer('chassis')">
+                        <span>Chasis Tubular Metálico</span>
+                        <div class="toggle-dot"></div>
+                    </div>
+                    <div class="btn-toggle active" id="toggle-sensors" onclick="toggleLayer('sensors')">
+                        <span>Sensores (LIDAR + Cámara)</span>
+                        <div class="toggle-dot"></div>
+                    </div>
+                    <div class="btn-toggle active" id="toggle-internals" onclick="toggleLayer('internals')">
+                        <span>Componentes Internos (Jetson, PCB, Batería)</span>
+                        <div class="toggle-dot"></div>
+                    </div>
+                    <div class="btn-toggle active" id="toggle-wheels" onclick="toggleLayer('wheels')">
+                        <span>Sistema de Tracción</span>
+                        <div class="toggle-dot"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="info-card">
+        <div id="info-title">Componente Seleccionado</div>
+        <div id="info-desc">Haz clic en cualquier parte del modelo 3D para ver los detalles técnicos.</div>
+        <div id="info-extra"></div>
+    </div>
+
+    <div class="bottom-hint">
+        🖱️ <b>Clic + Arrastrar:</b> Rotar | <b>Rueda:</b> Zoom | <b>Clic Derecho:</b> Desplazar | <b>Clic en pieza:</b> Detalles
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0e17);
+        scene.fog = new THREE.FogExp2(0x0a0e17, 0.15);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(3, 2.5, 3);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2 + 0.1;
+        controls.minDistance = 0.5;
+        controls.maxDistance = 10.0;
+        controls.target.set(0, 0.4, 0);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(5, 8, 4);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.left = -2;
+        dirLight.shadow.camera.right = 2;
+        dirLight.shadow.camera.top = 2;
+        dirLight.shadow.camera.bottom = -2;
+        scene.add(dirLight);
+
+        const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.5);
+        rimLight.position.set(-4, 3, -4);
+        scene.add(rimLight);
+
+        const gridHelper = new THREE.GridHelper(10, 40, 0x38bdf8, 0x1e293b);
+        gridHelper.position.y = 0;
+        scene.add(gridHelper);
+
+        const groundGeo = new THREE.PlaneGeometry(20, 20);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x070b12, roughness: 0.9, metalness: 0.1 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // Materials
+        const matSteel = new THREE.MeshStandardMaterial({ color: 0x2d3748, metalness: 0.7, roughness: 0.5 }); // Dark steel tubing
+        const matRubber = new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.1, roughness: 0.9 });
+        const matBlack = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.6, roughness: 0.3 }); // Lidar, Camera, Jetson
+        const matPCB = new THREE.MeshStandardMaterial({ color: 0x065f46, metalness: 0.2, roughness: 0.6 }); // Green PCB
+        const matBattery = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.4, roughness: 0.4 }); // Blue wrap
+        const matCapacitor = new THREE.MeshStandardMaterial({ color: 0x3b82f6, metalness: 0.6, roughness: 0.2 }); // Blue cylinders
+        const matLens = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.1, transparent: true, opacity: 0.8 });
+
+        const groupChassis = new THREE.Group();
+        const groupSensors = new THREE.Group();
+        const groupInternals = new THREE.Group();
+        const groupWheels = new THREE.Group();
+
+        scene.add(groupChassis);
+        scene.add(groupSensors);
+        scene.add(groupInternals);
+        scene.add(groupWheels);
+
+        let appData = null;
+        try {
+            const raw = localStorage.getItem('appData_presupuesto');
+            if (raw) appData = JSON.parse(raw);
+        } catch(e) {}
+        
+        function findBudgetItem(query) {
+            if (!appData || !query) return null;
+            const q = query.toLowerCase();
+            for (const sectionKey in appData) {
+                if(!appData[sectionKey].categorias) continue;
+                for (const cat of appData[sectionKey].categorias) {
+                    for (const item of cat.items) {
+                        if (item.nombre.toLowerCase().includes(q)) return item;
+                    }
+                }
+            }
+            return null;
+        }
+
+        const interactiveObjects = [];
+
+        function registerPart(mesh, title, desc, budgetQuery) {
+            mesh.userData = { title, desc, budgetQuery };
+            interactiveObjects.push(mesh);
+        }
+
+        function addTube(x, y, z, w, h, d, group) {
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matSteel);
+            mesh.position.set(x, y, z);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            group.add(mesh);
+            return mesh;
+        }
+
+        function addRotatedTube(x1, z1, x2, z2, y, t, group) {
+            const dx = x2 - x1;
+            const dz = z2 - z1;
+            const length = Math.sqrt(dx*dx + dz*dz);
+            const angle = Math.atan2(dx, dz);
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(t, t, length + t), matSteel);
+            mesh.position.set((x1 + x2) / 2, y, (z1 + z2) / 2);
+            mesh.rotation.y = angle;
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            group.add(mesh);
+            return mesh;
+        }
+
+        // ==========================================
+        // 1. CHASSIS (Metal Frame)
+        // ==========================================
+        const W = 0.5;  // Width
+        const D = 0.6;  // Depth
+        const H = 0.35; // Height (ligeramente más bajo para compensar)
+        const t = 0.04; // Tube thickness
+        
+        const hw = W/2;
+        const hd = D/2;
+
+        const yBottom = 0.20; // Elevado para que las ruedas entren por debajo
+        const yTop = yBottom + H;
+        const yMid = yBottom + H/2;
+
+        // Pillars
+        const p1 = addTube(-hw, yBottom + H/2, -hd, t, H + t, t, groupChassis);
+        const p2 = addTube( hw, yBottom + H/2, -hd, t, H + t, t, groupChassis);
+        const p3 = addTube(-hw, yBottom + H/2,  hd, t, H + t, t, groupChassis);
+        const p4 = addTube( hw, yBottom + H/2,  hd, t, H + t, t, groupChassis);
+        registerPart(p1, "Chasis Metálico Tubular", "Estructura principal soldada con tubos cuadrados, proporcionando alta rigidez y modularidad para montar componentes.", "perfiles de aluminio");
+        registerPart(p2, "Chasis Metálico Tubular", "Estructura principal soldada con tubos cuadrados.", "perfiles de aluminio");
+        registerPart(p3, "Chasis Metálico Tubular", "Estructura principal soldada con tubos cuadrados.", "perfiles de aluminio");
+        registerPart(p4, "Chasis Metálico Tubular", "Estructura principal soldada con tubos cuadrados.", "perfiles de aluminio");
+
+        // Bottom Frame
+        addTube(0, yBottom, -hd, W - t, t, t, groupChassis); // Front
+        addTube(0, yBottom,  hd, W - t, t, t, groupChassis); // Back
+        addTube(-hw, yBottom, 0, t, t, D - t, groupChassis); // Left
+        addTube( hw, yBottom, 0, t, t, D - t, groupChassis); // Right
+
+        // Top Frame
+        addTube(0, yTop, -hd, W - t, t, t, groupChassis); // Front
+        addTube(0, yTop,  hd, W - t, t, t, groupChassis); // Back
+        addTube(-hw, yTop, 0, t, t, D - t, groupChassis); // Left
+        addTube( hw, yTop, 0, t, t, D - t, groupChassis); // Right
+
+        // Middle Rails (for base plate)
+        addTube(-hw, yMid, 0, t, t, D - t, groupChassis); // Left mid
+        addTube( hw, yMid, 0, t, t, D - t, groupChassis); // Right mid
+        
+        // Base plate for internals
+        const plate = new THREE.Mesh(new THREE.BoxGeometry(W - t*2, 0.01, D - t*2), new THREE.MeshStandardMaterial({ color: 0x1a202c }));
+        plate.position.set(0, yMid - 0.01, 0);
+        plate.receiveShadow = true;
+        groupChassis.add(plate);
+
+        // Top Lidar Platform (Cross beam + Plate)
+        addTube(0, yTop, 0, W - t, t, t, groupChassis); // Central cross beam
+        addTube(0, yTop + 0.03, 0, 0.15, 0.02, 0.15, groupChassis); // Lidar base plate
+
+        // ==========================================
+        // 2. WHEELS & MOTORS
+        // ==========================================
+        const wheelGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.06, 32);
+        wheelGeo.rotateZ(Math.PI / 2);
+        
+        const rimGeo = new THREE.CylinderGeometry(0.065, 0.065, 0.062, 24);
+        rimGeo.rotateZ(Math.PI / 2);
+
+        const rWheelZ = hd - 0.1;
+
+        // ODrive M8325s Motor Geometry
+        const motorGeo = new THREE.CylinderGeometry(0.0415, 0.0415, 0.04, 32);
+        motorGeo.rotateZ(Math.PI / 2);
+
+        function createWheel(x, z, sideName) {
+            const wheel = new THREE.Mesh(wheelGeo, matRubber);
+            wheel.position.set(x, 0.1, z);
+            wheel.castShadow = true;
+            groupWheels.add(wheel);
+
+            const rim = new THREE.Mesh(rimGeo, new THREE.MeshStandardMaterial({color: 0x111111, metalness: 0.8, roughness: 0.2}));
+            wheel.add(rim);
+            
+            const motor = new THREE.Mesh(motorGeo, matBlack);
+            motor.position.set(x < 0 ? 0.05 : -0.05, 0, 0);
+            wheel.add(motor);
+
+            const mount = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.015, 16), matSteel);
+            mount.rotation.z = Math.PI / 2;
+            mount.position.set(x < 0 ? 0.0775 : -0.0775, 0, 0);
+            wheel.add(mount);
+
+            registerPart(wheel, "Motor ODrive M8325s-100KV + Rueda (" + sideName + ")", "Motor Brushless Outrunner de alto torque montado internamente. Tracción directa e independiente.", "odrive");
+        }
+
+        const frontZ = -hd + 0.1;
+        
+        // Ruedas Traseras
+        createWheel(-hw - 0.07, rWheelZ, "Trasera Izquierda");
+        createWheel( hw + 0.07, rWheelZ, "Trasera Derecha");
+        
+        // Ruedas Delanteras (Caster, ligeramente más chicas que las motrices)
+        const casterWheelGeo = new THREE.CylinderGeometry(0.075, 0.075, 0.045, 32);
+        casterWheelGeo.rotateZ(Math.PI / 2);
+        const casterRimGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.047, 24);
+        casterRimGeo.rotateZ(Math.PI / 2);
+
+        function createCaster(x, z, sideName) {
+            const casterGroup = new THREE.Group();
+            casterGroup.position.set(x, 0, z);
+
+            const cWheel = new THREE.Mesh(casterWheelGeo, matRubber);
+            cWheel.position.set(0, 0.075, -0.035); // Y=0.075 para tocar el piso en 0
+            cWheel.castShadow = true;
+            casterGroup.add(cWheel);
+
+            const rim = new THREE.Mesh(casterRimGeo, new THREE.MeshStandardMaterial({color: 0x111111, metalness: 0.8, roughness: 0.2}));
+            cWheel.add(rim);
+
+            const armGeo = new THREE.BoxGeometry(0.015, 0.10, 0.03);
+            const armL = new THREE.Mesh(armGeo, matSteel);
+            armL.position.set(-0.035, 0.11, -0.015);
+            armL.rotation.x = -Math.PI / 8;
+            casterGroup.add(armL);
+            
+            const armR = new THREE.Mesh(armGeo, matSteel);
+            armR.position.set(0.035, 0.11, -0.015);
+            armR.rotation.x = -Math.PI / 8;
+            casterGroup.add(armR);
+
+            const forkTop = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.015, 0.07), matSteel);
+            forkTop.position.set(0, 0.155, 0);
+            casterGroup.add(forkTop);
+
+            const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.05, 16), matSteel);
+            stem.position.set(0, 0.18, 0); // Llega hasta el frame en 0.20
+            casterGroup.add(stem);
+
+            groupWheels.add(casterGroup);
+            registerPart(forkTop, "Rueda Caster Todoterreno (" + sideName + ")", "Rueda pivotante industrial instalada por debajo del chasis rectangular para giro 360° libre.", "castor");
+        }
+
+        // Posicionadas exactamente debajo de los tubos laterales delanteros (X = ±hw)
+        createCaster(-hw, frontZ, "Delantera Izquierda");
+        createCaster( hw, frontZ, "Delantera Derecha");
+
+        // ==========================================
+        // 3. INTERNALS (Jetson, PCB, Battery)
+        // ==========================================
+        // Jetson (Left side, black heatsink)
+        const jetsonGrp = new THREE.Group();
+        jetsonGrp.position.set(-0.12, yMid, 0.1);
+        
+        const jetBase = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.01, 0.15), matPCB);
+        jetsonGrp.add(jetBase);
+        
+        const jetHeatsink = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.04, 0.12), matBlack);
+        jetHeatsink.position.set(0, 0.025, 0);
+        jetsonGrp.add(jetHeatsink);
+        
+        // Fins
+        for(let i=0; i<6; i++) {
+            const fin = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.02, 0.005), matBlack);
+            fin.position.set(0, 0.055, -0.05 + i*0.02);
+            jetsonGrp.add(fin);
+        }
+        
+        groupInternals.add(jetsonGrp);
+        registerPart(jetHeatsink, "Computadora NVIDIA Jetson", "Unidad principal de procesamiento y navegación. Ejecuta algoritmos de IA, SLAM y visión estéreo en tiempo real.", "jetson");
+
+        // Power Distribution Board (Right side, green with capacitors)
+        const pcbGrp = new THREE.Group();
+        pcbGrp.position.set(0.12, yMid, 0.05);
+        
+        const pcbBase = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.01, 0.18), matPCB);
+        pcbGrp.add(pcbBase);
+        
+        for(let i=0; i<4; i++) {
+            const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.03, 16), matCapacitor);
+            cap.position.set(-0.04 + i*0.025, 0.02, -0.05);
+            pcbGrp.add(cap);
+        }
+        
+        const connectBlock = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 0.03), new THREE.MeshStandardMaterial({color: 0xef4444}));
+        connectBlock.position.set(0, 0.015, 0.06);
+        pcbGrp.add(connectBlock);
+        
+        groupInternals.add(pcbGrp);
+        registerPart(pcbBase, "Distribución de Energía", "Placa electrónica (PCB) para gestionar, filtrar y distribuir la energía desde la batería a todos los componentes y motores.", "fuente dc-dc");
+
+        // Battery Pack (Front middle)
+        const battGrp = new THREE.Group();
+        battGrp.position.set(0, yMid + 0.0305, -0.15);
+        
+        for(let row=0; row<2; row++) {
+            for(let col=0; col<6; col++) {
+                const cell = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.08, 16), matBattery);
+                cell.rotation.z = Math.PI / 2;
+                cell.position.set(0, row*0.035 - 0.0175, col*0.035 - 0.0875);
+                battGrp.add(cell);
+            }
+        }
+        
+        // Straps
+        const strap1 = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.075, 0.015), matBlack);
+        strap1.position.set(0, 0, -0.05);
+        battGrp.add(strap1);
+        
+        const strap2 = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.075, 0.015), matBlack);
+        strap2.position.set(0, 0, 0.05);
+        battGrp.add(strap2);
+        
+        groupInternals.add(battGrp);
+        registerPart(battGrp, "Baterías Li-ion (24V)", "Pack de celdas de iones de litio. Proporciona la autonomía necesaria para la tracción y el procesamiento de IA.", "batería 24v");
+
+        // Motor Controllers (Rear near wheels)
+        const ctrl1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.02, 0.08), matPCB);
+        ctrl1.position.set(-0.15, yMid + 0.005, 0.2);
+        groupInternals.add(ctrl1);
+        registerPart(ctrl1, "Controlador de Motor (ESC)", "Regulador electrónico de velocidad para el motor izquierdo.", "odrive");
+
+        const ctrl2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.02, 0.08), matPCB);
+        ctrl2.position.set(0.15, yMid + 0.005, 0.2);
+        groupInternals.add(ctrl2);
+        registerPart(ctrl2, "Controlador de Motor (ESC)", "Regulador electrónico de velocidad para el motor derecho.", "odrive");
+
+
+        // ==========================================
+        // 4. SENSORS (LIDAR, Stereo Cam)
+        // ==========================================
+        // LIDAR 360 on top
+        const lidarGrp = new THREE.Group();
+        lidarGrp.position.set(0, yTop + 0.04, 0);
+        
+        const lidarBase = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.03, 32), matBlack);
+        lidarBase.position.y = 0.015;
+        lidarGrp.add(lidarBase);
+        
+        const lidarTop = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.025, 32), new THREE.MeshStandardMaterial({color: 0x111111, metalness: 0.8, roughness: 0.2}));
+        lidarTop.position.y = 0.04;
+        lidarGrp.add(lidarTop);
+        
+        groupSensors.add(lidarGrp);
+        registerPart(lidarTop, "LIDAR 360°", "Escáner láser rotativo. Mapea el entorno en 360 grados para evitar obstáculos y construir mapas SLAM 2D.", "slamtec");
+
+        // Stereo Camera (Front Top Rail)
+        const camGrp = new THREE.Group();
+        camGrp.position.set(0, yTop + 0.0375, -hd - 0.02);
+        
+        const camBody = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.035, 0.03), matBlack);
+        camGrp.add(camBody);
+        
+        const lens1 = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.01, 16), matLens);
+        lens1.rotation.x = Math.PI / 2;
+        lens1.position.set(-0.05, 0, -0.015);
+        camGrp.add(lens1);
+        
+        const lens2 = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.01, 16), matLens);
+        lens2.rotation.x = Math.PI / 2;
+        lens2.position.set(0.05, 0, -0.015);
+        camGrp.add(lens2);
+        
+        groupSensors.add(camGrp);
+        registerPart(camBody, "Cámara Estéreo para Navegación", "Cámara de visión estéreo tipo ZED. Aporta profundidad 3D densa y telemetría visual para la navegación.", "zed 2i");
+
+
+        // ==========================================
+        // INTERACTIVE RAYCASTING
+        // ==========================================
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        renderer.domElement.addEventListener('pointerdown', (event) => {
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(interactiveObjects, true);
+
+            if (intersects.length > 0) {
+                let obj = intersects[0].object;
+                while (obj && !obj.userData.title && obj.parent) {
+                    obj = obj.parent;
+                }
+                if (obj && obj.userData.title) {
+                    document.getElementById('info-card').style.display = 'block';
+                    document.getElementById('info-title').innerText = '🔍 ' + obj.userData.title;
+                    document.getElementById('info-desc').innerText = obj.userData.desc;
+                    
+                    const extra = document.getElementById('info-extra');
+                    extra.innerHTML = '';
+                    const budgetItem = findBudgetItem(obj.userData.budgetQuery);
+                    if (budgetItem) {
+                        extra.innerHTML = `
+                            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(56, 189, 248, 0.2);">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-size: 0.75rem; color: #94a3b8;">${budgetItem.nombre}</span>
+                                    <span style="color: #10b981; font-weight: 800; font-size: 0.95rem;">$${parseFloat(budgetItem.precio).toFixed(2)} USD</span>
+                                </div>
+                                ${budgetItem.link && budgetItem.link !== '#' ? `<a href="${budgetItem.link}" target="_blank" style="display: inline-block; margin-top: 8px; padding: 5px 10px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; text-decoration: none; border-radius: 4px; font-size: 0.75rem; font-weight: bold; border: 1px solid rgba(56, 189, 248, 0.3);">🛒 Link de compra</a>` : ''}
+                            </div>
+                        `;
+                    }
+                }
+            } else {
+                document.getElementById('info-card').style.display = 'none';
+            }
+        });
+
+        window.addEventListener('mousemove', (event) => {
+            if (event.target.tagName !== 'CANVAS') return; // Ignorar hover sobre la interfaz
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(interactiveObjects, true);
+
+            if (intersects.length > 0) {
+                document.body.style.cursor = 'pointer';
+            } else {
+                document.body.style.cursor = 'default';
+            }
+        });
+
+        let allPanelsOpen = true;
+        function toggleAllPanelsCollapse() {
+            allPanelsOpen = !allPanelsOpen;
+            const content = document.getElementById('sidebar-collapsible-content');
+            const icon = document.getElementById('icon-specs-arrow');
+            const sidebar = document.getElementById('sidebar-panel');
+
+            if (allPanelsOpen) {
+                content.style.display = 'flex';
+                sidebar.classList.remove('collapsed');
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.style.display = 'none';
+                sidebar.classList.add('collapsed');
+                icon.style.transform = 'rotate(-90deg)';
+            }
+        }
+
+        const layers = {
+            chassis: groupChassis,
+            sensors: groupSensors,
+            internals: groupInternals,
+            wheels: groupWheels
+        };
+
+        function toggleLayer(layerName) {
+            const grp = layers[layerName];
+            const btn = document.getElementById('toggle-' + layerName);
+            grp.visible = !grp.visible;
+            if (grp.visible) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+
+        function setCameraView(view) {
+            if (view === 'iso') {
+                camera.position.set(2.0, 1.8, 2.0);
+                controls.target.set(0, 0.3, 0);
+            } else if (view === 'front') {
+                camera.position.set(0, 0.5, -2.5);
+                controls.target.set(0, 0.3, 0);
+            } else if (view === 'side') {
+                camera.position.set(-2.5, 0.5, 0);
+                controls.target.set(0, 0.3, 0);
+            } else if (view === 'top') {
+                camera.position.set(0, 3.0, 0.01);
+                controls.target.set(0, 0.3, 0);
+            }
+            controls.update();
+        }
+
+        let clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            // Rotate Lidar
+            if (groupSensors.visible) {
+                lidarTop.rotation.y += 5.0 * delta;
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.action === 'zoom') {
+                const zoomFactor = 0.8;
+                const dist = camera.position.distanceTo(controls.target);
+                const targetDist = event.data.dir > 0 ? dist * zoomFactor : dist / zoomFactor;
+                
+                const finalDist = Math.max(controls.minDistance || 0.2, Math.min(controls.maxDistance || 6.0, targetDist));
+                
+                const direction = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
+                camera.position.copy(controls.target).add(direction.multiplyScalar(finalDist));
+                controls.update();
+            }
+        });
+    </script>
+</body>
+</html>

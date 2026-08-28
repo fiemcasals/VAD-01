@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visor 3D Interactivo - Prototipo Robot de Reparto VAD (25 kg)</title>
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-panel: rgba(16, 24, 39, 0.85);
+            --border-color: rgba(56, 189, 248, 0.25);
+            --accent-cyan: #38bdf8;
+            --accent-blue: #2563eb;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Top Header Overlay */
+        .top-bar {
+            position: absolute;
+            top: 20px;
+            left: 24px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: var(--bg-panel);
+            backdrop-filter: blur(12px);
+            padding: 12px 24px;
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .badge-pulse {
+            width: 10px;
+            height: 10px;
+            background-color: var(--accent-green);
+            border-radius: 50%;
+            box-shadow: 0 0 12px var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .top-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #fff;
+        }
+
+        .top-subtitle {
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Interactive Sidebar */
+        .sidebar {
+            position: absolute;
+            top: 20px;
+            right: 24px;
+            width: 360px;
+            max-height: calc(100vh - 40px);
+            z-index: 10;
+            background: var(--bg-panel);
+            backdrop-filter: blur(16px);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .sidebar.collapsed {
+            width: auto;
+            min-width: 250px;
+            padding: 12px 18px;
+            gap: 0;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Collapse Arrow Button */
+        .btn-arrow {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--accent-cyan);
+            border-radius: 6px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-arrow:hover {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+        }
+
+        #icon-specs-arrow {
+            transition: transform 0.25s ease;
+        }
+
+        .spec-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .spec-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+
+        .spec-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .spec-val {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+            margin-top: 2px;
+        }
+
+        /* Toggle Layer Controls */
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .btn-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 9px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-toggle:hover {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: var(--accent-cyan);
+        }
+
+        .btn-toggle.active {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: var(--accent-cyan);
+            color: #fff;
+        }
+
+        .toggle-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #64748b;
+        }
+
+        .btn-toggle.active .toggle-dot {
+            background: var(--accent-cyan);
+            box-shadow: 0 0 8px var(--accent-cyan);
+        }
+
+        /* Camera Views Buttons */
+        .views-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .btn-view {
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.2s;
+        }
+
+        .btn-view:hover {
+            color: #fff;
+            border-color: var(--accent-cyan);
+            background: rgba(56, 189, 248, 0.12);
+        }
+
+        /* Component Details Info Card */
+        #info-card {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            width: 320px;
+            background: rgba(14, 165, 233, 0.15);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            border-radius: 12px;
+            padding: 16px;
+            display: none;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #info-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+
+        #info-desc {
+            font-size: 0.76rem;
+            color: #cbd5e1;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        /* Bottom Help Overlay */
+        .bottom-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 24px;
+            z-index: 10;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(8px);
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Overlay -->
+    <div class="top-bar">
+        <div class="badge-pulse"></div>
+        <div>
+            <div class="top-title">ROBOT DE REPARTO AUTÓNOMO VAD-25</div>
+            <div class="top-subtitle">Prototipo AMR Industrial • Carga 25 kg • ROS 2</div>
+        </div>
+    </div>
+
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+
+    <!-- Sidebar Controls -->
+    <div class="sidebar" id="sidebar-panel">
+        <div class="section-title" style="justify-content: space-between; cursor: pointer; margin-bottom: 0;" onclick="toggleAllPanelsCollapse()">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span>📊 Especificaciones & Control</span>
+            </div>
+            <button class="btn-arrow" id="btn-specs-toggle" title="Ocultar / Mostrar todo el panel">
+                <svg id="icon-specs-arrow" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Contenedor Colapsable de Todas las Ventanas -->
+        <div id="sidebar-collapsible-content" style="display: flex; flex-direction: column; gap: 16px; transition: all 0.3s ease;">
+            <!-- 1. Especificaciones Clave -->
+            <div>
+                <div class="section-title" style="font-size: 0.78rem; color: var(--text-muted);">📋 Datos Clave del Vehículo</div>
+                <div id="spec-grid-container" class="spec-grid" style="margin-top: 8px;">
+                    <div class="spec-card">
+                        <div class="spec-label">Carga Útil</div>
+                        <div class="spec-val">25.0 kg</div>
+                    </div>
+                    <div class="spec-card">
+                        <div class="spec-label">Peso Total (Bruto)</div>
+                        <div class="spec-val">43.0 kg</div>
+                    </div>
+                    <div class="spec-card">
+                        <div class="spec-label">Tracción / Potencia</div>
+                        <div class="spec-val">2x BLDC 250W</div>
+                    </div>
+                    <div class="spec-card">
+                        <div class="spec-label">Autonomía Real</div>
+                        <div class="spec-val">4.8 - 5.5 h</div>
+                    </div>
+                    <div class="spec-card">
+                        <div class="spec-label">Rampa Máxima</div>
+                        <div class="spec-val">12° (~21%)</div>
+                    </div>
+                    <div class="spec-card">
+                        <div class="spec-label">Dimensiones (LxAxH)</div>
+                        <div class="spec-val">65 x 52 x 50 cm</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Vistas de Cámara -->
+            <div>
+                <div class="section-title">🎥 Vistas de Cámara</div>
+                <div class="views-row" style="margin-top: 8px;">
+                    <button class="btn-view" onclick="setCameraView('iso')">ISOMÉTRICA</button>
+                    <button class="btn-view" onclick="setCameraView('front')">FRONTAL</button>
+                    <button class="btn-view" onclick="setCameraView('side')">LATERAL</button>
+                    <button class="btn-view" onclick="setCameraView('top')">SUPERIOR</button>
+                    <button class="btn-view" onclick="setCameraView('ground')">RASANTE (SUELO)</button>
+                    <button class="btn-view" onclick="setCameraView('bottom')">DESDE ABAJO</button>
+                </div>
+            </div>
+
+            <!-- 3. Capas del Prototipo -->
+            <div>
+                <div class="section-title">🧩 Capas del Prototipo</div>
+                <div class="control-group" style="margin-top: 8px;">
+                    <div class="btn-toggle active" id="toggle-cargo" onclick="toggleLayer('cargo')">
+                        <span>Bandeja de Carga (25 kg)</span>
+                        <div class="toggle-dot"></div>
+                    </div>
+                    <div class="btn-toggle active" id="toggle-body" onclick="toggleLayer('body')">
+                        <span>Carcasa y Paneles Estéticos</span>
+                        <div class="toggle-dot"></div>
+                    </div>
+                    <div class="btn-toggle active" id="toggle-sensors" onclick="toggleLayer('sensors')">
+                        <span>Sensores Físicos (LPX-T1 + ZED 2i + GPS)</span>
+                        <div class="toggle-dot"></div>
+                    </div>
+                    <div class="btn-toggle active" id="toggle-laser-fan" onclick="toggleLaserFan()">
+                        <span>Cobertura Láser: 270° Activo + 90° Ciego (Trasera)</span>
+                        <div class="toggle-dot"></div>
+                    </div>
+                    <div class="btn-toggle active" id="toggle-internals" onclick="toggleLayer('internals')">
+                        <span>Batería LiFePO4 + Cómputo Jetson</span>
+                        <div class="toggle-dot"></div>
+                    </div>
+                    <div class="btn-toggle active" id="toggle-lidar-scan" onclick="toggleLidarAnimation()">
+                        <span>Giro del Escáner Láser (Animación)</span>
+                        <div class="toggle-dot"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dynamic Component Callout -->
+    <div id="info-card">
+        <div id="info-title">Componente Seleccionado</div>
+        <div id="info-desc">Haz clic en cualquier parte del modelo 3D para ver los detalles técnicos.</div>
+        <div id="info-extra"></div>
+    </div>
+
+    <!-- Help Hint -->
+    <div class="bottom-hint">
+        🖱️ <b>Clic + Arrastrar:</b> Rotar | <b>Rueda del Ratón:</b> Zoom | <b>Clic Derecho:</b> Desplazar | <b>Clic en pieza:</b> Ver detalles
+    </div>
+
+    <!-- Three.js + OrbitControls from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // Setup Three.js Scene
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0e17);
+        scene.fog = new THREE.FogExp2(0x0a0e17, 0.25);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(2.2, 1.6, 2.4);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        container.appendChild(renderer.domElement);
+
+        // Controls: Permitir giro orbital completo hasta nivel de suelo y por debajo
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI * 0.98; // Permite descender hasta el suelo y mirar desde abajo
+        controls.minPolarAngle = 0.01;
+        controls.minDistance = 0.2;
+        controls.maxDistance = 6.0;
+        controls.target.set(0, 0.15, 0);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(5, 8, 4);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.bias = -0.0001;
+        scene.add(dirLight);
+
+        const blueRimLight = new THREE.DirectionalLight(0x38bdf8, 0.8);
+        blueRimLight.position.set(-4, 3, -4);
+        scene.add(blueRimLight);
+
+        // Ground Grid
+        const gridHelper = new THREE.GridHelper(10, 40, 0x38bdf8, 0x1e293b);
+        gridHelper.position.y = 0;
+        scene.add(gridHelper);
+
+        const groundGeo = new THREE.PlaneGeometry(16, 16);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x070b12, roughness: 0.8, metalness: 0.2, transparent: true, opacity: 0.65, side: THREE.DoubleSide });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // Material Palettes
+        const matAlum = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.25 }); // Anodized Black 2040
+        const matAlumBright = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 });
+        const matBodyWhite = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.1, roughness: 0.3 }); // White Composite Shell
+        const matRubber = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.05, roughness: 0.9 }); // Solid Rubber Tires
+        const matRim = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.7, roughness: 0.3 }); // Cyan Rims
+        const matCargo = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.2, roughness: 0.6, transparent: true, opacity: 0.92 });
+        const matGlass = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.1, transparent: true, opacity: 0.6 });
+        const matEStop = new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.3, roughness: 0.4 });
+        const matLedCyan = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+        const matBattery = new THREE.MeshStandardMaterial({ color: 0x047857, metalness: 0.4, roughness: 0.4 }); // LiFePO4 Green
+
+        // Root Robot Group
+        const robot = new THREE.Group();
+        scene.add(robot);
+
+        let appData = null;
+        try {
+            const raw = localStorage.getItem('appData_presupuesto');
+            if (raw) appData = JSON.parse(raw);
+        } catch(e) {}
+        
+        function findBudgetItem(query) {
+            if (!appData || !query) return null;
+            const q = query.toLowerCase();
+            for (const sectionKey in appData) {
+                if(!appData[sectionKey].categorias) continue;
+                for (const cat of appData[sectionKey].categorias) {
+                    for (const item of cat.items) {
+                        if (item.nombre.toLowerCase().includes(q)) return item;
+                    }
+                }
+            }
+            return null;
+        }
+
+        // Layer Groups
+        const groupChassis = new THREE.Group();
+        const groupBody = new THREE.Group();
+        const groupCargo = new THREE.Group();
+        const groupSensors = new THREE.Group();
+        const groupInternals = new THREE.Group();
+
+        robot.add(groupChassis);
+        robot.add(groupBody);
+        robot.add(groupCargo);
+        robot.add(groupSensors);
+        robot.add(groupInternals);
+
+        // Interactive Clickable Meshes Array
+        const interactiveObjects = [];
+
+        function registerPart(mesh, title, desc, budgetQuery) {
+            mesh.userData = { title, desc, budgetQuery };
+            interactiveObjects.push(mesh);
+        }
+
+        // ==========================================
+        // 1. CHASSIS & WHEELS
+        // ==========================================
+        // Restore 2040 Rails (Length: 0.65m, Width: 0.42m)
+        const railGeoLong = new THREE.BoxGeometry(0.04, 0.02, 0.60);
+        const railLeft = new THREE.Mesh(railGeoLong, matAlum);
+        railLeft.position.set(-0.21, 0.17, 0); // Elevado 5cm
+        railLeft.castShadow = true;
+        groupChassis.add(railLeft);
+
+        const railRight = railLeft.clone();
+        railRight.position.x = 0.21;
+        groupChassis.add(railRight);
+
+        const railGeoCross = new THREE.BoxGeometry(0.38, 0.02, 0.04);
+        const railFront = new THREE.Mesh(railGeoCross, matAlum);
+        railFront.position.set(0, 0.17, -0.28);
+        groupChassis.add(railFront);
+
+        const railBack = railFront.clone();
+        railBack.position.z = 0.28;
+        groupChassis.add(railBack);
+
+        const basePlateGeo = new THREE.BoxGeometry(0.44, 0.005, 0.58);
+        const basePlate = new THREE.Mesh(basePlateGeo, matAlumBright);
+        basePlate.position.set(0, 0.18, 0); // Elevado 5cm (de 0.13 a 0.18)
+        basePlate.castShadow = true;
+        groupChassis.add(basePlate);
+        registerPart(basePlate, "Chasis Modular en Perfilería 2040", "Estructura de aluminio anodizado ranurado. Liviana, rígida y ajustable para montar sensores y placas.", "perfiles de aluminio");
+
+        // ODrive M8325s Outrunner Motors & Wheels
+        const wheelGeo = new THREE.CylinderGeometry(0.0825, 0.0825, 0.05, 32);
+        wheelGeo.rotateZ(Math.PI / 2);
+
+        const motorGeo = new THREE.CylinderGeometry(0.0415, 0.0415, 0.04, 32);
+        motorGeo.rotateZ(Math.PI / 2);
+        const matMotor = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.6, roughness: 0.3 });
+
+        function createWheel(x, z, sideName) {
+            const wheel = new THREE.Mesh(wheelGeo, matRubber);
+            wheel.position.set(x, 0.0825, z);
+            wheel.castShadow = true;
+            groupChassis.add(wheel);
+
+            const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.052, 24), matRim);
+            rim.rotation.z = Math.PI / 2;
+            wheel.add(rim);
+            
+            const motor = new THREE.Mesh(motorGeo, matMotor);
+            // Si x es negativo (izq), motor del lado interno es +x
+            motor.position.set(x < 0 ? 0.045 : -0.045, 0, 0);
+            wheel.add(motor);
+
+            const mount = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.02, 16), matAlum);
+            mount.rotation.z = Math.PI / 2;
+            mount.position.set(x < 0 ? 0.075 : -0.075, 0, 0);
+            wheel.add(mount);
+
+            registerPart(wheel, "Motor ODrive M8325s-100KV + Rueda (" + sideName + ")", "Motor Brushless Outrunner (Direct Drive). Alto torque a baja velocidad, controlado por ODrive.", "odrive");
+        }
+
+        // Ruedas Traseras
+        createWheel(-0.28, 0.18, "Trasera Izquierda");
+        createWheel( 0.28, 0.18, "Trasera Derecha");
+        // Ruedas Delanteras (Caster grandes, apenas más chicas que las traseras)
+        const casterWheelGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.045, 32);
+        casterWheelGeo.rotateZ(Math.PI / 2);
+
+        function createCaster(x, z, sideName) {
+            const casterGroup = new THREE.Group();
+            casterGroup.position.set(x, 0, z);
+
+            const cWheel = new THREE.Mesh(casterWheelGeo, matRubber);
+            cWheel.position.set(0, 0.07, -0.035); // Apoya en Y=0
+            cWheel.castShadow = true;
+            casterGroup.add(cWheel);
+
+            const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.047, 24), matRim);
+            rim.rotation.z = Math.PI / 2;
+            cWheel.add(rim);
+
+            const forkMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8, roughness: 0.3 });
+            
+            const armGeo = new THREE.BoxGeometry(0.015, 0.10, 0.03);
+            const armL = new THREE.Mesh(armGeo, forkMat);
+            armL.position.set(-0.035, 0.10, -0.015);
+            armL.rotation.x = -Math.PI / 8;
+            casterGroup.add(armL);
+            
+            const armR = new THREE.Mesh(armGeo, forkMat);
+            armR.position.set(0.035, 0.10, -0.015);
+            armR.rotation.x = -Math.PI / 8;
+            casterGroup.add(armR);
+
+            const forkTop = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.015, 0.07), forkMat);
+            forkTop.position.set(0, 0.145, 0);
+            casterGroup.add(forkTop);
+
+            const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.035, 16), matAlum);
+            stem.position.set(0, 0.16, 0); // Llega hasta la basePlate en 0.18
+            casterGroup.add(stem);
+
+            groupChassis.add(casterGroup);
+            registerPart(forkTop, "Rueda Caster Todoterreno (" + sideName + ")", "Rueda libre pivotante (giro loco) industrial. Montada debajo del chasis para giro 360° sin colisiones.", "castor");
+        }
+
+        // Posicionadas exactamente debajo de los tubos laterales delanteros
+        createCaster(-0.21, -0.22, "Delantera Izquierda");
+        createCaster( 0.21, -0.22, "Delantera Derecha");
+
+        // ==========================================
+        // 2. INTERNAL COMPONENTS (BATTERY & COMPUTE)
+        // ==========================================
+        // 24V LiFePO4 Battery Pack (Lower Deck)
+        const battGeo = new THREE.BoxGeometry(0.20, 0.075, 0.16);
+        const batt = new THREE.Mesh(battGeo, matBattery);
+        batt.position.set(0, 0.225, 0.12); // Elevado 5cm
+        batt.castShadow = true;
+        groupInternals.add(batt);
+        registerPart(batt, "Batería LiFePO4 24V (8S) 20Ah / 480 Wh", "Batería industrial de Litio Ferro-Fosfato. >2,500 ciclos, no inflamable. Proporciona entre 4.8 y 5.5 horas de autonomía continua.", "batería 24v");
+
+        // Driver Dual VESC
+        const vescGeo = new THREE.BoxGeometry(0.12, 0.03, 0.09);
+        const vesc = new THREE.Mesh(vescGeo, new THREE.MeshStandardMaterial({ color: 0x1e1e24, metalness: 0.7 }));
+        vesc.position.set(0, 0.205, -0.06); // Elevado 5cm
+        groupInternals.add(vesc);
+        registerPart(vesc, "Driver Dual VESC 75100 FOC", "Controlador de tracción doble con interfaz CAN Bus. Control suave a baja velocidad y frenado regenerativo en rampas.", "odrive");
+
+        // NVIDIA Jetson Orin NX (Middle Deck)
+        const jetsonGeo = new THREE.BoxGeometry(0.13, 0.045, 0.12);
+        const jetson = new THREE.Mesh(jetsonGeo, new THREE.MeshStandardMaterial({ color: 0x0f766e, metalness: 0.6, roughness: 0.3 }));
+        jetson.position.set(0, 0.275, -0.06); // Elevado 5cm
+        jetson.castShadow = true;
+        groupInternals.add(jetson);
+        registerPart(jetson, "NVIDIA Jetson Orin NX (16 GB)", "Computadora central de IA (100 TOPS, 1024 núcleos CUDA, 8-Core CPU). Ejecuta ROS 2, Nav2, SLAM 2D y detección YOLO.", "jetson");
+
+        // ==========================================
+        // 3. SCULPTED AERODYNAMIC BODYWORK & LIGHTS
+        // ==========================================
+        // (A) Carcasa Inferior Principal (Blanco Satinado / Compuesto Ligero)
+        const lowerBodyGeo = new THREE.BoxGeometry(0.48, 0.14, 0.62);
+        // Sin angostar la trompa (se mantiene rectangular para alojar sensores)
+        const lowerBody = new THREE.Mesh(lowerBodyGeo, matBodyWhite);
+        lowerBody.position.set(0, 0.25, 0); // Elevado 5cm
+        lowerBody.castShadow = true;
+        groupBody.add(lowerBody);
+
+        // Tira LED Cyan Frontal (Luz Diurna / DRL)
+        const ledGeo = new THREE.BoxGeometry(0.38, 0.012, 0.01);
+        const ledFront = new THREE.Mesh(ledGeo, matLedCyan);
+        ledFront.position.set(0, 0.23, -0.312); // Elevado 5cm
+        groupBody.add(ledFront);
+
+        // Luces LED Traseras Rojas
+        const ledRearGeo = new THREE.BoxGeometry(0.36, 0.012, 0.01);
+        const ledRearMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+        const ledRear = new THREE.Mesh(ledRearGeo, ledRearMat);
+        ledRear.position.set(0, 0.23, 0.312); // Elevado 5cm
+        groupBody.add(ledRear);
+
+        // ==========================================
+        // 4. SENSORS (LIDAR, 4x CÁMARAS PERIFÉRICAS 360°, GPS, E-STOP)
+        // ==========================================
+        // (A) Pulsador de Parada de Emergencia (E-Stop) en cubierta trasera despejada
+        const estopBase = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.015, 16), matAlum);
+        estopBase.position.set(0.15, 0.328, 0.24); // Elevado 5cm
+        const estopCap = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.022, 0.016, 20), matEStop);
+        estopCap.position.set(0.15, 0.343, 0.24); // Elevado 5cm
+        groupSensors.add(estopBase);
+        groupSensors.add(estopCap);
+        registerPart(estopCap, "Pulsador de Parada de Emergencia (E-Stop)", "Botón tipo hongo IP65 de Categoría 1 en la cubierta trasera libre. Corta la alimentación de tracción en <2ms manteniendo encendido el cómputo.", "frenos electromagnéticos");
+
+        // (B) GNSS / GPS Antenna Puck
+        const gpsGeo = new THREE.CylinderGeometry(0.028, 0.028, 0.012, 20);
+        const gps = new THREE.Mesh(gpsGeo, matAlum);
+        gps.position.set(-0.15, 0.326, 0.24); // Elevado 5cm
+        groupSensors.add(gps);
+        registerPart(gps, "Antena GNSS / GPS u-blox M9N", "Receptor satelital multibanda para coordenadas globales iniciales y seguimiento macro de waypoints en Nav2.", "neo-m9n");
+
+        // (C) Posición del LiDAR: PARTE SUPERIOR DEL VEHÍCULO
+        const lX = 0, lY = 0.525, lZ = 0.0; // Elevado 5cm (encima de la caja de carga)
+
+        // 2D LiDAR: Slamtec LPX-T1 (360° Libres, IP66, OPTMAG sin contacto mecánico)
+        const lidarBase = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.025, 24), matAlum);
+        lidarBase.position.set(lX, lY - 0.015, lZ);
+        // El LPX-T1 es más cuadrado/compacto que el S2 — se representa con carcasa levemente más alta
+        const lidarTop = new THREE.Mesh(new THREE.CylinderGeometry(0.030, 0.030, 0.028, 24), new THREE.MeshStandardMaterial({ color: 0x1a6faf, metalness: 0.95, roughness: 0.05 }));
+        lidarTop.position.set(lX, lY + 0.007, lZ);
+        // Banda naranaja IP66 industrial
+        const lidarBand = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.004, 24), new THREE.MeshStandardMaterial({ color: 0xf97316, metalness: 0.3, roughness: 0.5 }));
+        lidarBand.position.set(lX, lY + 0.003, lZ);
+        groupSensors.add(lidarBase);
+        groupSensors.add(lidarTop);
+        groupSensors.add(lidarBand);
+        registerPart(lidarTop, "LiDAR 2D Slamtec LPX-T1 (360°)",
+            "Reposicionado al techo del vehículo. Proporciona un escaneo completo de 360° sin zonas ciegas mecánicas.", "slamtec");
+
+        // HAZ LÁSER (Ahora 360° libre porque está en el techo)
+        const scanMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.35, side: THREE.DoubleSide });
+        const laserBeamGroup = new THREE.Group();
+
+        const laserShape = new THREE.Shape();
+        laserShape.moveTo(0, 0);
+        const radius = 1.8;
+        const segments = 64;
+        for (let i = 0; i <= segments; i++) {
+            const a = (i / segments) * Math.PI * 2;
+            laserShape.lineTo(Math.cos(a) * radius, Math.sin(a) * radius);
+        }
+        laserShape.closePath();
+        const laserGeom = new THREE.ShapeGeometry(laserShape);
+        laserGeom.rotateX(-Math.PI / 2);
+        const laserMesh = new THREE.Mesh(laserGeom, scanMat);
+        laserMesh.position.set(lX, lY, lZ);
+        laserBeamGroup.add(laserMesh);
+
+
+        groupSensors.add(laserBeamGroup);
+
+        const scanMesh = laserBeamGroup;
+
+        // -----------------------------------------------------------
+        // (D) CÁMARA FRONTAL PRINCIPAL: Stereolabs ZED 2i (Cota 23.5 cm)
+        // -----------------------------------------------------------
+        const camHousingGeo = new THREE.BoxGeometry(0.18, 0.035, 0.025);
+        const camMesh = new THREE.Mesh(camHousingGeo, new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 }));
+        camMesh.position.set(0, 0.285, -0.315); // Elevado 5cm
+        camMesh.castShadow = true;
+
+        const lensLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.008, 16), matGlass);
+        lensLeft.rotation.x = Math.PI / 2;
+        lensLeft.position.set(-0.06, 0, -0.014);
+        camMesh.add(lensLeft);
+
+        const lensRight = lensLeft.clone();
+        lensRight.position.x = 0.06;
+        camMesh.add(lensRight);
+
+        groupSensors.add(camMesh);
+        registerPart(camMesh, "Cámara Estéreo Frontal Stereolabs ZED 2i", "Cámara bifocal frontal a 23.5 cm de altura. VIO a 100 Hz, nube 3D y detección de obstáculos con IA YOLO.", "zed 2i");
+
+        // -----------------------------------------------------------
+        // (E) 3x CÁMARAS PERIFÉRICAS (IZQUIERDA, DERECHA, TRASERA) - COTA 23.5 CM
+        // -----------------------------------------------------------
+        // 1. Cámara Lateral Izquierda (Apuntando hacia -X)
+        const camLGroup = new THREE.Group();
+        const camLHousing = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.045, 0.045), matAlum);
+        camLHousing.position.set(-0.241, 0.285, 0.00); // Elevado 5cm
+        camLGroup.add(camLHousing);
+
+        const camLBezel = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.006, 16), matRim);
+        camLBezel.rotation.z = Math.PI / 2;
+        camLBezel.position.set(-0.252, 0.285, 0.00); // Elevado 5cm
+        camLGroup.add(camLBezel);
+
+        const camLLens = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.008, 16), matGlass);
+        camLLens.rotation.z = Math.PI / 2;
+        camLLens.position.set(-0.255, 0.285, 0.00); // Elevado 5cm
+        camLGroup.add(camLLens);
+        groupSensors.add(camLGroup);
+        registerPart(camLHousing, "Cámara Periférica Lateral Izquierda (23.5 cm)", "Cámara gran angular HDR a 23.5 cm. Captura imágenes georreferenciadas para reconocimiento de lugar (VPR) y logs de seguridad lateral.");
+
+        // 2. Cámara Lateral Derecha (Apuntando hacia +X)
+        const camRGroup = new THREE.Group();
+        const camRHousing = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.045, 0.045), matAlum);
+        camRHousing.position.set(0.241, 0.285, 0.00); // Elevado 5cm
+        camRGroup.add(camRHousing);
+
+        const camRBezel = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.006, 16), matRim);
+        camRBezel.rotation.z = Math.PI / 2;
+        camRBezel.position.set(0.252, 0.285, 0.00); // Elevado 5cm
+        camRGroup.add(camRBezel);
+
+        const camRLens = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.008, 16), matGlass);
+        camRLens.rotation.z = Math.PI / 2;
+        camRLens.position.set(0.255, 0.285, 0.00); // Elevado 5cm
+        camRGroup.add(camRLens);
+        groupSensors.add(camRGroup);
+        registerPart(camRHousing, "Cámara Periférica Lateral Derecha (23.5 cm)", "Cámara gran angular HDR a 23.5 cm. Monitoreo lateral de pasillos y registro para localización visual en base de datos.");
+
+        // 3. Cámara Trasera (Apuntando hacia +Z)
+        const camBGroup = new THREE.Group();
+        const camBHousing = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.045, 0.02), matAlum);
+        camBHousing.position.set(0.00, 0.285, 0.311); // Elevado 5cm
+        camBGroup.add(camBHousing);
+
+        const camBBezel = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.006, 16), matRim);
+        camBBezel.rotation.x = Math.PI / 2;
+        camBBezel.position.set(0.00, 0.285, 0.322); // Elevado 5cm
+        camBGroup.add(camBBezel);
+
+        const camBLens = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.008, 16), matGlass);
+        camBLens.rotation.x = Math.PI / 2;
+        camBLens.position.set(0.00, 0.285, 0.325); // Elevado 5cm
+        camBGroup.add(camBLens);
+        groupSensors.add(camBGroup);
+        registerPart(camBHousing, "Cámara Periférica Trasera (23.5 cm)", "Cámara gran angular trasera a 23.5 cm. Caja negra de retroceso y matching de imágenes con base de datos georreferenciada.");
+
+        // ==========================================
+        // 5. CARGO BOX & FRONT TRIANGULAR DISPLAY PEDESTAL (UNA SOLA PIEZA)
+        // ==========================================
+        const cargoGroup = new THREE.Group();
+        cargoGroup.position.y += 0.05; // Elevado 5cm en bloque
+
+        const podMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.7, roughness: 0.35 });
+        const podLidMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8, roughness: 0.25 });
+
+        // (A) Contenedor de Carga Rectangular (45 Litros / Capacidad 25 kg)
+        // Ocupa de Z = -0.19m a Z = +0.19m (profundidad 380 mm), dejando el escalón trasero libre
+        const podBodyGeo = new THREE.BoxGeometry(0.42, 0.17, 0.38);
+        const podBody = new THREE.Mesh(podBodyGeo, podMat);
+        podBody.position.set(0, 0.355, 0.00);
+        podBody.castShadow = true;
+        cargoGroup.add(podBody);
+
+        // (B) Tapa Superior Hermética
+        const podLidGeo = new THREE.BoxGeometry(0.43, 0.020, 0.39);
+        const podLid = new THREE.Mesh(podLidGeo, podLidMat);
+        podLid.position.set(0, 0.448, 0.00);
+        podLid.castShadow = true;
+        cargoGroup.add(podLid);
+
+        // Borde LED Cyan de Cerradura Solenoide (Frente de la tapa)
+        const lockLedGeo = new THREE.BoxGeometry(0.12, 0.008, 0.008);
+        const lockLed = new THREE.Mesh(lockLedGeo, matLedCyan);
+        lockLed.position.set(0, 0.450, -0.196);
+        cargoGroup.add(lockLed);
+        registerPart(lockLed, "Cerradura Electrónica Solenoide 12V", "Cierre electromagnético de compuerta. Se abre automáticamente al validar PIN, QR o Face ID.");
+
+        // -----------------------------------------------------------
+        // (C) BASE TRIANGULAR ESTÉTICA ADOSADA AL FRENTE (PEDESTAL DE LA PANTALLA)
+        // -----------------------------------------------------------
+        // Cuña triangular ubicada 100% en el FRENTE (Z negativo, entre Z = -0.265m y Z = -0.190m)
+        const hw = 0.13;       // Semiancho en X (+/- 130 mm -> ancho total 260 mm)
+        const yBot = 0.272;    // Base inferior apoyada en el chasis
+        const yTop = 0.420;    // Vértice superior contra la caja
+        const zFront = -0.265; // Punta inferior frontal
+        const zBack = -0.190;  // Pared frontal de la caja
+
+        // Vértices del prisma triangular frontal con normales calculadas
+        const triangleVertices = new Float32Array([
+            // Cara inclinada frontal (donde se apoya la pantalla)
+            -hw, yBot, zFront,   hw, yBot, zFront,   hw, yTop, zBack,
+            -hw, yBot, zFront,   hw, yTop, zBack,   -hw, yTop, zBack,
+
+            // Lateral izquierdo (triángulo)
+            -hw, yBot, zBack,   -hw, yBot, zFront,  -hw, yTop, zBack,
+
+            // Lateral derecho (triángulo)
+             hw, yBot, zFront,   hw, yBot, zBack,    hw, yTop, zBack,
+
+            // Base inferior (apoyada en el chasis)
+            -hw, yBot, zBack,    hw, yBot, zBack,    hw, yBot, zFront,
+            -hw, yBot, zBack,    hw, yBot, zFront,  -hw, yBot, zFront,
+
+            // Cara posterior (contra la pared de la caja)
+             hw, yBot, zBack,   -hw, yBot, zBack,   -hw, yTop, zBack,
+             hw, yBot, zBack,   -hw, yTop, zBack,    hw, yTop, zBack
+        ]);
+
+        const triangleGeo = new THREE.BufferGeometry();
+        triangleGeo.setAttribute('position', new THREE.BufferAttribute(triangleVertices, 3));
+        triangleGeo.computeVertexNormals();
+
+        const screenPedestal = new THREE.Mesh(triangleGeo, podMat);
+        screenPedestal.castShadow = true;
+        cargoGroup.add(screenPedestal);
+
+        // -----------------------------------------------------------
+        // (D) PANTALLA TÁCTIL DE 7" MONTADA ENCIMA DE LA CARA INCLINADA DEL TRIÁNGULO
+        // -----------------------------------------------------------
+        // Inclinación calculada: arctan((0.265 - 0.190) / (0.420 - 0.272)) = +0.469 rad (~26.9°)
+        const frontConsoleGroup = new THREE.Group();
+        frontConsoleGroup.position.set(0, 0.347, -0.228);
+        frontConsoleGroup.rotation.x = 0.469; // Apoyada y pegada exactamente sobre la cara inclinada del triángulo
+
+        // Marco metálico de la pantalla
+        const screenBezelGeo = new THREE.BoxGeometry(0.24, 0.13, 0.010);
+        const screenBezel = new THREE.Mesh(screenBezelGeo, matAlum);
+        frontConsoleGroup.add(screenBezel);
+
+        // Pantalla Táctil IPS de 7" (Superficie de cristal oscuro)
+        const screenGlassGeo = new THREE.BoxGeometry(0.20, 0.10, 0.004);
+        const screenGlassMat = new THREE.MeshStandardMaterial({ color: 0x050d1a, metalness: 0.9, roughness: 0.1 });
+        const screenGlass = new THREE.Mesh(screenGlassGeo, screenGlassMat);
+        screenGlass.position.set(0, -0.005, -0.006);
+        frontConsoleGroup.add(screenGlass);
+
+        // Ojos Digitales Robóticos Cyan (Carita Amigable de Navegación)
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+        const eyeLeftGeo = new THREE.CylinderGeometry(0.016, 0.016, 0.002, 24);
+        eyeLeftGeo.rotateX(Math.PI / 2);
+        const eyeLeft = new THREE.Mesh(eyeLeftGeo, eyeMat);
+        eyeLeft.position.set(-0.045, 0.005, -0.009);
+        frontConsoleGroup.add(eyeLeft);
+
+        const eyeRight = eyeLeft.clone();
+        eyeRight.position.x = 0.045;
+        frontConsoleGroup.add(eyeRight);
+
+        // Sonrisa Digital Cyan Sutil
+        const smileGeo = new THREE.BoxGeometry(0.035, 0.004, 0.002);
+        const smile = new THREE.Mesh(smileGeo, eyeMat);
+        smile.position.set(0, -0.022, -0.009);
+        frontConsoleGroup.add(smile);
+
+        // Cámara de Usuario / Lector de Código QR / Face ID (Sobre la pantalla)
+        const userCamGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.008, 16);
+        const userCam = new THREE.Mesh(userCamGeo, matGlass);
+        userCam.rotation.x = Math.PI / 2;
+        userCam.position.set(0, 0.050, -0.007);
+        frontConsoleGroup.add(userCam);
+
+        const userCamRing = new THREE.Mesh(new THREE.RingGeometry(0.007, 0.009, 16), matLedCyan);
+        userCamRing.position.set(0, 0.050, -0.009);
+        frontConsoleGroup.add(userCamRing);
+
+        cargoGroup.add(frontConsoleGroup);
+        registerPart(screenGlass, "Pantalla Frontal 7\" Inclinada (Carita Amigable + Interfaz)", "Montada sobre el pedestal triangular frontal. Durante la navegación proyecta la carita amigable animada; al llegar a destino conmuta a la pantalla táctil de entrega.");
+        registerPart(userCam, "Cámara Frontal de Usuario y Lector QR / Face ID", "Cámara superior de 5 MP orientada hacia el receptor para escaneo de código QR en smartphones y reconocimiento facial.");
+
+        groupCargo.add(cargoGroup);
+        registerPart(screenPedestal, "Pedestal Triangular Frontal para Pantalla", "Base triangular ergonómica fusionada al frente de la caja que sostiene la pantalla táctil con inclinación óptima de 25°.");
+        registerPart(podBody, "Contenedor de Carga (25 kg / 45L)", "Compartimento de carga de polímero de alto impacto termoformado con compuerta electromagnética.", "caja de carga");
+
+        // ==========================================
+        // INTERACTIVE RAYCASTING (CLICK TO INSPECT)
+        // ==========================================
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        renderer.domElement.addEventListener('pointerdown', (event) => {
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(interactiveObjects, true);
+
+            if (intersects.length > 0) {
+                let obj = intersects[0].object;
+                while (obj && !obj.userData.title && obj.parent) {
+                    obj = obj.parent;
+                }
+                if (obj && obj.userData.title) {
+                    document.getElementById('info-card').style.display = 'block';
+                    document.getElementById('info-title').innerText = '🔍 ' + obj.userData.title;
+                    document.getElementById('info-desc').innerText = obj.userData.desc;
+                    
+                    const extra = document.getElementById('info-extra');
+                    extra.innerHTML = '';
+                    const budgetItem = findBudgetItem(obj.userData.budgetQuery);
+                    if (budgetItem) {
+                        extra.innerHTML = `
+                            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(56, 189, 248, 0.2);">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-size: 0.75rem; color: #94a3b8;">${budgetItem.nombre}</span>
+                                    <span style="color: #10b981; font-weight: 800; font-size: 0.95rem;">$${parseFloat(budgetItem.precio).toFixed(2)} USD</span>
+                                </div>
+                                ${budgetItem.link && budgetItem.link !== '#' ? `<a href="${budgetItem.link}" target="_blank" style="display: inline-block; margin-top: 8px; padding: 5px 10px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; text-decoration: none; border-radius: 4px; font-size: 0.75rem; font-weight: bold; border: 1px solid rgba(56, 189, 248, 0.3);">🛒 Link de compra</a>` : ''}
+                            </div>
+                        `;
+                    }
+                }
+            } else {
+                document.getElementById('info-card').style.display = 'none';
+            }
+        });
+
+        window.addEventListener('mousemove', (event) => {
+            if (event.target.tagName !== 'CANVAS') return; // Ignorar hover sobre la interfaz
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(interactiveObjects, true);
+
+            if (intersects.length > 0) {
+                document.body.style.cursor = 'pointer';
+            } else {
+                document.body.style.cursor = 'default';
+            }
+        });
+
+        // Global Sidebar Collapse Toggle (Closes all sections)
+        let allPanelsOpen = true;
+        function toggleAllPanelsCollapse() {
+            allPanelsOpen = !allPanelsOpen;
+            const content = document.getElementById('sidebar-collapsible-content');
+            const icon = document.getElementById('icon-specs-arrow');
+            const sidebar = document.getElementById('sidebar-panel');
+
+            if (allPanelsOpen) {
+                content.style.display = 'flex';
+                sidebar.classList.remove('collapsed');
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.style.display = 'none';
+                sidebar.classList.add('collapsed');
+                icon.style.transform = 'rotate(-90deg)';
+            }
+        }
+
+        // Layer Toggling Logic
+        const layers = {
+            cargo: groupCargo,
+            body: groupBody,
+            sensors: groupSensors,
+            internals: groupInternals
+        };
+
+        function toggleLayer(layerName) {
+            const grp = layers[layerName];
+            const btn = document.getElementById('toggle-' + layerName);
+            grp.visible = !grp.visible;
+            if (grp.visible) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+
+        let laserFanVisible = true;
+        function toggleLaserFan() {
+            laserFanVisible = !laserFanVisible;
+            laserBeamGroup.visible = laserFanVisible;
+            const btn = document.getElementById('toggle-laser-fan');
+            if (laserFanVisible) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+
+        let lidarScanning = true;
+        function toggleLidarAnimation() {
+            lidarScanning = !lidarScanning;
+            const btn = document.getElementById('toggle-lidar-scan');
+            if (lidarScanning) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+
+        // Camera Presets
+        function setCameraView(view) {
+            if (view === 'iso') {
+                camera.position.set(2.0, 1.4, 2.2);
+                controls.target.set(0, 0.15, 0);
+            } else if (view === 'front') {
+                camera.position.set(0, 0.25, -2.4);
+                controls.target.set(0, 0.15, 0);
+            } else if (view === 'side') {
+                camera.position.set(-2.4, 0.25, 0);
+                controls.target.set(0, 0.15, 0);
+            } else if (view === 'top') {
+                camera.position.set(0, 2.8, 0.01);
+                controls.target.set(0, 0.05, 0);
+            } else if (view === 'ground') {
+                camera.position.set(0, 0.095, -1.6);
+                controls.target.set(0, 0.095, -0.10);
+            } else if (view === 'bottom') {
+                camera.position.set(0, -1.8, 0.01);
+                controls.target.set(0, 0.10, 0);
+            }
+            controls.update();
+        }
+
+        // Rayo láser de barrido (LPX-T1 — 360° libre)
+        let laserRayAngle = 0;
+        const laserSweepSpeed = 4.5; // rad/s
+        const rayGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(1.8, 0, 0)]);
+        const rayMat = new THREE.LineBasicMaterial({ color: 0x7dd3fc, linewidth: 2 });
+        const laserRay = new THREE.Line(rayGeo, rayMat);
+        laserRay.position.set(lX, lY + 0.002, lZ);
+        groupSensors.add(laserRay);
+
+        // Animation Loop
+        let clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            // Rotate wheels slightly to simulate readiness
+            groupChassis.children.forEach(child => {
+                if (child.geometry && child.geometry.type === 'CylinderGeometry' && child.material === matRubber) {
+                    child.rotation.x += 0.3 * delta;
+                }
+            });
+
+            // Rotate LiDAR optical head
+            if (lidarScanning) {
+                lidarTop.rotation.y += 8.0 * delta;
+                laserRayAngle += laserSweepSpeed * delta;
+                if (laserRayAngle > Math.PI * 2) {
+                    laserRayAngle -= Math.PI * 2;
+                }
+                laserRay.rotation.y = laserRayAngle;
+            }
+
+            // Animación sutil de parpadeo en los ojos de la carita amigable
+            const elapsedTime = clock.getElapsedTime();
+            const blinkCycle = elapsedTime % 4.0; // Parpadeo cada 4 segundos
+            if (blinkCycle > 3.85) {
+                const blinkScale = Math.max(0.1, Math.sin((4.0 - blinkCycle) * Math.PI / 0.15));
+                eyeLeft.scale.y = blinkScale;
+                eyeRight.scale.y = blinkScale;
+            } else {
+                eyeLeft.scale.y = 1.0;
+                eyeRight.scale.y = 1.0;
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Responsive Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Zoom from external buttons
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.action === 'zoom') {
+                const zoomFactor = 0.8;
+                const dist = camera.position.distanceTo(controls.target);
+                const targetDist = event.data.dir > 0 ? dist * zoomFactor : dist / zoomFactor;
+                
+                // Limit zoom to OrbitControls min/max distance
+                const finalDist = Math.max(controls.minDistance, Math.min(controls.maxDistance, targetDist));
+                
+                const direction = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
+                camera.position.copy(controls.target).add(direction.multiplyScalar(finalDist));
+                controls.update();
+            }
+        });
+    </script>
+</body>
+</html>
