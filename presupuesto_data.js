@@ -417,7 +417,6 @@ function renderizarControlesFlotantes() {
     }
     
     controls.innerHTML = `
-        <button class="action-btn" onclick="resetData()" title="Resetear datos"><span style="font-size:1.2rem">🔄</span></button>
         <button class="action-btn ${isEditMode ? 'btn-primary' : ''}" onclick="toggleEditMode()">
             ${isEditMode ? '💾 Finalizar Edición' : '✏️ Editar Valores'}
         </button>
