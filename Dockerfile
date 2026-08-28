@@ -1,10 +1,7 @@
-FROM nginx:alpine
-
-# Copia los archivos de tu presupuesto al directorio donde Nginx sirve los sitios web
-COPY . /usr/share/nginx/html/
-
-# Expone el puerto 80
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
 EXPOSE 80
-
-# Comando por defecto para correr Nginx
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["npm", "start"]

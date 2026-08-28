@@ -1,0 +1,12 @@
+{
+  "name": "vad-presupuesto-live",
+  "version": "1.0.0",
+  "description": "Backend para edición en vivo del presupuesto VAD",
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "scripts": {
+    "start": "node server.js"
+  }
+}

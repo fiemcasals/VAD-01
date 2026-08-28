@@ -85,7 +85,7 @@ const DEFAULT_PRESUPUESTOS = {
 // ============================================================================
 // ESTADO DE LA APLICACIÓN
 // ============================================================================
-let appData = JSON.parse(localStorage.getItem('appData_presupuesto')) || DEFAULT_PRESUPUESTOS;
+let appData = null;
 let currentTabId = '';
 let isEditMode = false;
 
@@ -254,10 +254,10 @@ window.deleteCategory = function(catIndex) {
     }
 }
 
-window.resetData = function() {
-    if(confirm('¿Volver a los valores de fábrica? Perderás tus cambios no exportados.')) {
+window.resetData = async function() {
+    if(confirm('¿Volver a los valores de fábrica? Perderás tus cambios de la base de datos.')) {
         appData = JSON.parse(JSON.stringify(DEFAULT_PRESUPUESTOS));
-        saveData();
+        await saveData();
         renderizarPresupuesto(currentTabId);
     }
 }
@@ -268,9 +268,20 @@ function parseQuantity(str) {
     return match ? parseInt(match[0], 10) : 1;
 }
 
-function saveData() {
-    localStorage.setItem('appData_presupuesto', JSON.stringify(appData));
+async function saveData() {
     updateTotalBadge(); // Actualizar badge superior al vuelo
+    
+    // Guardar en la base de datos
+    try {
+        await fetch('/api/budget', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(appData)
+        });
+    } catch(e) {
+        console.error("Error al guardar en BD", e);
+    }
+
     // Actualizar el total global en el padre (index.html) si estamos en iframe
     if (window.parent && typeof window.parent.updateGlobalTotal === 'function') {
         window.parent.updateGlobalTotal();
@@ -293,7 +304,20 @@ function updateTotalBadge() {
 // MOTOR DE RENDERIZADO VISUAL
 // ============================================================================
 
-window.renderizarPresupuesto = function(idCategoria) {
+window.renderizarPresupuesto = async function(idCategoria) {
+    if (!appData) {
+        try {
+            const res = await fetch('/api/budget');
+            if (res.ok) {
+                appData = await res.json();
+            } else {
+                appData = JSON.parse(JSON.stringify(DEFAULT_PRESUPUESTOS));
+            }
+        } catch(e) {
+            appData = JSON.parse(JSON.stringify(DEFAULT_PRESUPUESTOS));
+        }
+    }
+    
     currentTabId = idCategoria;
     const data = appData[idCategoria];
     if (!data) return;

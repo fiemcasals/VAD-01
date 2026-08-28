@@ -258,26 +258,36 @@
         const navBtns = document.querySelectorAll('#top-nav .nav-btn:not(.home-btn)');
 
         // Calcular Total Global
-        function updateGlobalTotal() {
+        async function updateGlobalTotal() {
             let totalGeneral = 0;
-            // Forzar lectura de localStorage
+            // Forzar lectura de la base de datos (Backend)
             try {
-                const raw = localStorage.getItem('appData_presupuesto');
-                if (raw) appData = JSON.parse(raw);
-            } catch(e) {}
+                const res = await fetch('/api/budget');
+                if (res.ok) {
+                    appData = await res.json();
+                } else if (typeof DEFAULT_PRESUPUESTOS !== 'undefined') {
+                    appData = DEFAULT_PRESUPUESTOS;
+                }
+            } catch(e) {
+                if (typeof DEFAULT_PRESUPUESTOS !== 'undefined') {
+                    appData = DEFAULT_PRESUPUESTOS;
+                }
+            }
             
-            for (let category in appData) {
-                if (appData[category] && appData[category].categorias) {
-                    appData[category].categorias.forEach(cat => {
-                        cat.items.forEach(item => {
-                            let qty = 1;
-                            if (item.cant) {
-                                const match = item.cant.toString().match(/\d+/);
-                                if (match) qty = parseInt(match[0], 10);
-                            }
-                            totalGeneral += (item.precio * qty);
+            if (appData) {
+                for (let category in appData) {
+                    if (appData[category] && appData[category].categorias) {
+                        appData[category].categorias.forEach(cat => {
+                            cat.items.forEach(item => {
+                                let qty = 1;
+                                if (item.cant) {
+                                    const match = item.cant.toString().match(/\d+/);
+                                    if (match) qty = parseInt(match[0], 10);
+                                }
+                                totalGeneral += (item.precio * qty);
+                            });
                         });
-                    });
+                    }
                 }
             }
             document.getElementById('global-total-badge').innerText = `Presupuesto Total: $${totalGeneral.toFixed(2)}`;

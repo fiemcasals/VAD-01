@@ -7,5 +7,6 @@ services:
     restart: unless-stopped
     ports:
       # Mapea el puerto 8080 de tu VPS al puerto 80 del contenedor Nginx.
-      # Si quieres usar otro puerto, cambia el "8080".
       - "8080:80"
+    volumes:
+      - ./data:/app/data
