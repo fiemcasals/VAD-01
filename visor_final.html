@@ -729,8 +729,8 @@
         groupSensors.add(lidarBase);
         groupSensors.add(lidarTop);
         groupSensors.add(lidarBand);
-        registerPart(lidarTop, "LiDAR 2D Slamtec LPX-T1 (360°)",
-            "Reposicionado al techo del vehículo. Proporciona un escaneo completo de 360° sin zonas ciegas mecánicas.", "slamtec");
+        registerPart(lidarTop, "LiDAR 3D Estado Sólido (Exteriores 20m)",
+            "Reposicionado al techo del vehículo. Genera una nube de puntos 3D flash para evasión de obstáculos en exteriores, sin partes móviles.", "lidar 3d");
 
         // HAZ LÁSER (Ahora 360° libre porque está en el techo)
         const scanMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.35, side: THREE.DoubleSide });

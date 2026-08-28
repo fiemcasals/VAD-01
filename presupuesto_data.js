@@ -67,7 +67,7 @@ const DEFAULT_PRESUPUESTOS = {
             {
                 nombre: "Navegación y Localización",
                 items: [
-                    { cant: "x1", nombre: "Slamtec RPLIDAR S2", precio: 413.00, link: "https://www.robotshop.com/products/slamtec-rplidar-s2-low-cost-360-degree-laser-range-scanner" },
+                    { cant: "x1", nombre: "LiDAR 3D Estado Sólido (Exteriores 20m)", precio: 550.00, link: "https://www.robotshop.com/products/solid-state-3d-lidar" },
                     { cant: "x1", nombre: "u-blox NEO-M9N GNSS USB", precio: 55.00, link: "https://holybro.com/products/m9n-gps" }
                 ]
             },

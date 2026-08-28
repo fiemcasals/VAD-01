@@ -330,7 +330,7 @@
                     </div>
                     <div class="spec-card">
                         <div class="spec-label">Sensores</div>
-                        <div class="spec-val">LIDAR 360° + Estéreo</div>
+                        <div class="spec-val">LIDAR 3D + Estéreo</div>
                     </div>
                     <div class="spec-card">
                         <div class="spec-label">Batería</div>
@@ -752,7 +752,7 @@
         lidarGrp.add(lidarTop);
         
         groupSensors.add(lidarGrp);
-        registerPart(lidarTop, "LIDAR 360°", "Escáner láser rotativo. Mapea el entorno en 360 grados para evitar obstáculos y construir mapas SLAM 2D.", "slamtec");
+        registerPart(lidarTop, "LiDAR 3D Estado Sólido (Exteriores 20m)", "Genera una nube de puntos 3D para navegación avanzada y evasión de obstáculos en exteriores.", "lidar 3d");
 
         // Stereo Camera (Front Top Rail)
         const camGrp = new THREE.Group();
