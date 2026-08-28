@@ -101,8 +101,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 2rem;
+            justify-content: space-between; /* Separar header arriba y botones abajo */
+            padding: 6rem 2rem 4rem 2rem;
             opacity: 1;
             visibility: visible;
             transition: opacity 0.4s ease, visibility 0.4s;
@@ -137,16 +137,12 @@
         }
 
         .global-total {
-            margin-top: 1.5rem;
+            margin-top: 1rem;
             display: inline-block;
-            padding: 0.75rem 2.5rem;
-            border-radius: 100px;
-            background: rgba(16, 185, 129, 0.15);
-            border: 1px solid rgba(16, 185, 129, 0.4);
             color: var(--accent-green);
-            font-size: 1.8rem;
-            font-weight: 700;
-            box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
+            font-size: 2rem;
+            font-weight: 800;
+            text-shadow: 0 4px 15px rgba(0,0,0,0.9);
             animation: fadeInDown 0.8s ease-out 0.1s backwards;
         }
 
@@ -154,25 +150,25 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 1.5rem;
-            max-width: 1200px;
+            gap: 1rem;
+            max-width: 1000px;
             animation: fadeInUp 0.8s ease-out 0.2s backwards;
         }
 
         .big-btn {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 1.2rem 2rem;
-            border-radius: 100px;
+            gap: 10px;
+            padding: 0.75rem 1.5rem; /* Botones más bajos/planos */
+            border-radius: 12px;
             text-decoration: none;
-            color: white;
-            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.95rem;
             font-weight: 600;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
+            background: rgba(9, 9, 11, 0.65); /* Fondo oscuro más sutil */
+            border: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(8px);
             cursor: pointer;
         }
 
