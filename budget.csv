@@ -1,0 +1,14 @@
+Nro,Efecto,Precio Un,Cantidad,Precio Total,Link
+1,Kit Motor + Driver,340,2,680,https://shop.odriverobotics.com/collections/kits/products/s1-and-m8325s-start-kit
+2,Modulo Receptor CAN USB,37,1,37,https://shop.odriverobotics.com/collections/accessories/products/usb-can-adapter
+3,Isolator para Configuración,16,1,16,https://wwshop.odriverobotics.com/collections/accessories/products/usb-c-to-usb-a-cable-and-usb-isolator
+4,Cable para CAN,4,3,12,https://shop.odriverobotics.com/products/jst-gh-can-cable?pr_prod_strat=pinned&pr_rec_id=4d22b674e&pr_rec_pid=7302885605446&pr_ref_pid=7257252823110&pr_seq=uniform
+5,Resistencia de frenado,19,1,19,https://shop.odriverobotics.com/collections/accessories/products/set-of-8-brake-resistors
+6,Bateria 24V 6Ah,205,3,615,https://www.mercadolibre.com.ar/bateria-lifepo4-24v-6ah-para-autos-electricos-de-ninos/p/MLA2085011262?pdp_filters=SHIPPING_ORIGIN%3A10215068#polycard_client=search-desktop&be_origin=backend&overlay_label=not_apply&search_layout=grid&position=24&type=product&tracking_id=0b9bab67-a971-4887-bb91-031d65c6f54b&wid=MLA1670563201&sid=search
+7,Cargador de Bateria Inteligente,116,1,116,https://www.mercadolibre.com.ar/cargador-inteligente-12v-20ah-o-24v-10ah-lifepo4-acido-etc/p/MLA66737627#polycard_client=search-desktop&be_origin=backend&overlay_label=not_apply&search_layout=grid&position=4&type=product&tracking_id=90616a31-12a9-4e04-843c-62ca9b3fb9cd&wid=MLA1727717685&sid=search
+8,Placa Jtson,670,1,670,https://www.mercadolibre.com.ar/nvidia-jetson-orin-nano-super-developer-kit/up/MLAU4682782045#polycard_client=search-desktop&be_origin=backend&overlay_label=not_apply&search_layout=grid&position=2&type=product&tracking_id=3ee6ce76-fcf6-4282-a898-70a388e8efb3&wid=MLA1982358047&sid=search
+9,Cámara Stereo 3D,640,1,640,https://www.mercadolibre.com.ar/camara-3d-precisa-para-robotica-interior-y-escaneo/up/MLAU3971675180#polycard_client=search-desktop&be_origin=backend&overlay_label=not_apply&search_layout=grid&position=51&type=product&tracking_id=9a6f7e5e-a170-4803-b1f2-aca782c75c1f&wid=MLA3602047448&sid=search
+10,Fuente DC-DC 24 a 5V,22,1,22,https://www.mercadolibre.com.ar/reductor-convertidor-conversor-de-tension-12v24v-a--5v-20a/up/MLAU3846955273#polycard_client=search-desktop&be_origin=backend&overlay_label=not_apply&search_layout=grid&position=6&type=product&tracking_id=f4e819ed-42e7-432a-b017-5fa34fa5b442&wid=MLA1710396321&sid=search
+11,Conecor de Empalme Rápido in:2 out 6,"1,6",2,"3,2",https://www.mercadolibre.com.ar/conector-bornera-empalme-2-entradas-6-salidas/up/MLAU4045515349#polycard_client=search-desktop&be_origin=backend&overlay_label=not_apply&search_layout=grid&position=23&type=product&tracking_id=f4d21f6e-4920-4ecf-8137-96e9b42fe28b&wid=MLA1820094381&sid=search
+12,Cables y Conectores,30,1,30,
+,,,,"2860,2",
