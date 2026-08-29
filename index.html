@@ -94,6 +94,67 @@
             background: rgba(255, 255, 255, 0.1);
         }
 
+        .hamburger {
+            display: none;
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        @media (max-width: 900px) {
+            #top-nav {
+                justify-content: space-between;
+            }
+            .nav-brand {
+                display: block !important;
+            }
+            .hamburger {
+                display: block;
+            }
+            .nav-links {
+                position: absolute;
+                top: var(--nav-height);
+                left: 0;
+                width: 100%;
+                background: rgba(9, 9, 11, 0.95);
+                backdrop-filter: blur(12px);
+                flex-direction: column;
+                align-items: stretch;
+                padding: 15px;
+                gap: 8px;
+                border-bottom: 1px solid var(--glass-border);
+                transform: translateY(-150%);
+                opacity: 0;
+                pointer-events: none;
+                transition: all 0.3s ease;
+                z-index: 1999;
+            }
+            .nav-links.mobile-open {
+                transform: translateY(0);
+                opacity: 1;
+                pointer-events: all;
+            }
+            .nav-btn {
+                width: 100%;
+                justify-content: center;
+                padding: 12px;
+            }
+            .nav-btn.home-btn {
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
+        }
+
         /* --- HOME VIEW (LAUNCHPAD) --- */
         #home-view {
             position: absolute;
@@ -211,12 +272,16 @@
 
     <!-- TOP NAV BAR -->
     <nav id="top-nav">
-        <button class="nav-btn home-btn" onclick="goHome()">🏠 Inicio</button>
-        <button class="nav-btn" data-target="visor_final_lidar_frontal.html" onclick="loadApp('visor_final_lidar_frontal.html', this)">🚀 Prototipo Final</button>
-        <button class="nav-btn" data-target="visor_estructural.html" onclick="loadApp('visor_estructural.html', this)">⚙️ Estructura</button>
-        <button class="nav-btn" data-target="presupuesto.html" onclick="loadApp('presupuesto.html', this)">⚡ P. Electrónica</button>
-        <button class="nav-btn" data-target="presupuesto_mecanica.html" onclick="loadApp('presupuesto_mecanica.html', this)">🔧 P. Mecánica</button>
-        <button class="nav-btn" data-target="presupuesto_informatica.html" onclick="loadApp('presupuesto_informatica.html', this)">💻 P. Software</button>
+        <div class="nav-brand" style="display: none; color: white; font-weight: bold; flex: 1;">VAD Dashboard</div>
+        <button class="hamburger" onclick="toggleMenu()">☰ Menú</button>
+        <div class="nav-links">
+            <button class="nav-btn home-btn" onclick="goHome()">🏠 Inicio</button>
+            <button class="nav-btn" data-target="visor_final_lidar_frontal.html" onclick="loadApp('visor_final_lidar_frontal.html', this)">🚀 Prototipo Final</button>
+            <button class="nav-btn" data-target="visor_estructural.html" onclick="loadApp('visor_estructural.html', this)">⚙️ Estructura</button>
+            <button class="nav-btn" data-target="presupuesto.html" onclick="loadApp('presupuesto.html', this)">⚡ P. Electrónica</button>
+            <button class="nav-btn" data-target="presupuesto_mecanica.html" onclick="loadApp('presupuesto_mecanica.html', this)">🔧 P. Mecánica</button>
+            <button class="nav-btn" data-target="presupuesto_informatica.html" onclick="loadApp('presupuesto_informatica.html', this)">💻 P. Software</button>
+        </div>
     </nav>
 
     <!-- HOME LAUNCHPAD -->
@@ -246,12 +311,19 @@
         const topNav = document.getElementById('top-nav');
         const iframe = document.getElementById('main-frame');
         const navBtns = document.querySelectorAll('#top-nav .nav-btn:not(.home-btn)');
+        const navLinks = document.querySelector('.nav-links');
+
+        function toggleMenu() {
+            navLinks.classList.toggle('mobile-open');
+        }
 
         function loadApp(url, clickedBtn = null) {
             // Hide home, show app
             homeView.classList.add('hidden');
             appView.classList.add('visible');
             topNav.classList.add('visible');
+            
+            navLinks.classList.remove('mobile-open'); // Close menu on mobile
 
             // Load iframe content if it's different
             if (iframe.src.indexOf(url) === -1) {
@@ -275,6 +347,8 @@
             homeView.classList.remove('hidden');
             appView.classList.remove('visible');
             topNav.classList.remove('visible');
+            
+            navLinks.classList.remove('mobile-open'); // Close menu on mobile
             
             // Optional: clear iframe to save resources when on home screen
             // iframe.src = "";
