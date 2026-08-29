@@ -197,6 +197,20 @@
             font-weight: 300;
         }
 
+        .global-total {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 8px 24px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 1.3rem;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.1);
+            animation: scaleIn 0.8s ease-out 0.4s backwards;
+        }
+
 
         .grid-buttons {
             display: flex;
@@ -289,6 +303,7 @@
         <header>
             <h1>Proyecto VAD</h1>
             <div class="subtitle">Vehículo Autónomo de Distribución Industrial</div>
+            <div class="global-total" id="global-total-badge">Calculando...</div>
         </header>
 
         <div class="grid-buttons">
@@ -305,6 +320,7 @@
         <iframe id="main-frame" src=""></iframe>
     </div>
 
+    <script src="presupuesto_data.js"></script>
     <script>
         const homeView = document.getElementById('home-view');
         const appView = document.getElementById('app-view');
@@ -354,6 +370,39 @@
             // iframe.src = "";
             navBtns.forEach(btn => btn.classList.remove('active'));
         }
+
+        let localAppData = null;
+        function updateGlobalTotal() {
+            let totalGeneral = 0;
+            try {
+                const raw = localStorage.getItem('appData_presupuesto');
+                if (raw) localAppData = JSON.parse(raw);
+                else if (typeof DEFAULT_PRESUPUESTOS !== 'undefined') localAppData = DEFAULT_PRESUPUESTOS;
+            } catch(e) {}
+            
+            if (localAppData) {
+                for (let category in localAppData) {
+                    if (localAppData[category] && localAppData[category].categorias) {
+                        localAppData[category].categorias.forEach(subcat => {
+                            subcat.items.forEach(item => {
+                                totalGeneral += (item.precio * (item.cantidad || 1));
+                            });
+                        });
+                    }
+                }
+            }
+            
+            const badge = document.getElementById('global-total-badge');
+            if (badge) {
+                badge.innerText = `Presupuesto Total: $${totalGeneral.toFixed(2)}`;
+            }
+        }
+        
+        updateGlobalTotal();
+
+        iframe.addEventListener('load', () => {
+            updateGlobalTotal();
+        });
     </script>
 </body>
 </html>
