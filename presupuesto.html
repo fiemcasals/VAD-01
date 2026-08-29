@@ -193,11 +193,63 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Mobile Menu */
+        .menu-toggle {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            gap: 5px;
+            margin-bottom: 1rem;
+        }
+
+        .menu-toggle .bar {
+            width: 25px;
+            height: 3px;
+            background-color: var(--text-primary);
+            border-radius: 3px;
+            transition: all 0.3s ease-in-out;
+        }
+
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: flex;
+                align-self: center;
+                margin-bottom: 2rem;
+            }
+            .nav-tabs {
+                display: none;
+                flex-direction: column;
+                width: 100%;
+                max-width: 300px;
+                gap: 0.5rem;
+                margin-bottom: 2rem;
+            }
+            .nav-tabs.show {
+                display: flex;
+                animation: fadeIn 0.3s ease-in-out;
+            }
+            .menu-toggle.is-active .bar:nth-child(2) {
+                opacity: 0;
+            }
+            .menu-toggle.is-active .bar:nth-child(1) {
+                transform: translateY(8px) rotate(45deg);
+            }
+            .menu-toggle.is-active .bar:nth-child(3) {
+                transform: translateY(-8px) rotate(-45deg);
+            }
+        }
     </style>
 </head>
 <body>
 
-    <div class="nav-tabs">
+    <div class="menu-toggle" id="mobile-menu">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+    </div>
+
+    <div class="nav-tabs" id="nav-tabs">
         <a href="index.html" class="active">Electrónica</a>
         <a href="presupuesto_mecanica.html">Mecánica</a>
         <a href="presupuesto_informatica.html">Informática</a>
@@ -217,6 +269,11 @@
     <!-- Script Maestro de Datos -->
     <script src="presupuesto_data.js"></script>
     <script>
+        document.getElementById('mobile-menu').addEventListener('click', function() {
+            this.classList.toggle('is-active');
+            document.getElementById('nav-tabs').classList.toggle('show');
+        });
+
         // Renderizar dinámicamente la categoría "electronica"
         renderizarPresupuesto('electronica');
     </script>

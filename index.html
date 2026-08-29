@@ -101,8 +101,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: space-between; /* Separar header arriba y botones abajo */
-            padding: 6rem 2rem 4rem 2rem;
+            justify-content: center;
+            padding: 2rem;
             opacity: 1;
             visibility: visible;
             transition: opacity 0.4s ease, visibility 0.4s;
@@ -136,39 +136,30 @@
             font-weight: 300;
         }
 
-        .global-total {
-            margin-top: 1rem;
-            display: inline-block;
-            color: var(--accent-green);
-            font-size: 2rem;
-            font-weight: 800;
-            text-shadow: 0 4px 15px rgba(0,0,0,0.9);
-            animation: fadeInDown 0.8s ease-out 0.1s backwards;
-        }
 
         .grid-buttons {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 1rem;
-            max-width: 1000px;
+            gap: 1.5rem;
+            max-width: 1200px;
             animation: fadeInUp 0.8s ease-out 0.2s backwards;
         }
 
         .big-btn {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 0.75rem 1.5rem; /* Botones más bajos/planos */
-            border-radius: 12px;
+            gap: 12px;
+            padding: 1.2rem 2rem;
+            border-radius: 100px;
             text-decoration: none;
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.95rem;
+            color: white;
+            font-size: 1.1rem;
             font-weight: 600;
-            background: rgba(9, 9, 11, 0.65); /* Fondo oscuro más sutil */
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(10px);
             cursor: pointer;
         }
 
@@ -221,7 +212,7 @@
     <!-- TOP NAV BAR -->
     <nav id="top-nav">
         <button class="nav-btn home-btn" onclick="goHome()">🏠 Inicio</button>
-        <button class="nav-btn" data-target="visor_final.html" onclick="loadApp('visor_final.html', this)">🚀 Prototipo Final</button>
+        <button class="nav-btn" data-target="visor_final_lidar_frontal.html" onclick="loadApp('visor_final_lidar_frontal.html', this)">🚀 Prototipo Final</button>
         <button class="nav-btn" data-target="visor_estructural.html" onclick="loadApp('visor_estructural.html', this)">⚙️ Estructura</button>
         <button class="nav-btn" data-target="presupuesto.html" onclick="loadApp('presupuesto.html', this)">⚡ P. Electrónica</button>
         <button class="nav-btn" data-target="presupuesto_mecanica.html" onclick="loadApp('presupuesto_mecanica.html', this)">🔧 P. Mecánica</button>
@@ -232,11 +223,11 @@
     <div id="home-view">
         <header>
             <h1>Proyecto VAD</h1>
-            <div class="global-total" id="global-total-badge">Calculando...</div>
+            <div class="subtitle">Vehículo Autónomo de Distribución Industrial</div>
         </header>
 
         <div class="grid-buttons">
-            <button class="big-btn sim-final" onclick="loadApp('visor_final.html')">🚀 Prototipo Final Integrado</button>
+            <button class="big-btn sim-final" onclick="loadApp('visor_final_lidar_frontal.html')">🚀 Prototipo Final Integrado</button>
             <button class="big-btn sim-est" onclick="loadApp('visor_estructural.html')">⚙️ Estructura de Caño</button>
             <button class="big-btn p-elec" onclick="loadApp('presupuesto.html')">⚡ Presupuesto Electrónica</button>
             <button class="big-btn p-mec" onclick="loadApp('presupuesto_mecanica.html')">🔧 Presupuesto Mecánica</button>
@@ -249,61 +240,12 @@
         <iframe id="main-frame" src=""></iframe>
     </div>
 
-    <script src="presupuesto_data.js?v=2"></script>
     <script>
         const homeView = document.getElementById('home-view');
         const appView = document.getElementById('app-view');
         const topNav = document.getElementById('top-nav');
         const iframe = document.getElementById('main-frame');
         const navBtns = document.querySelectorAll('#top-nav .nav-btn:not(.home-btn)');
-
-        // Calcular Total Global
-        async function updateGlobalTotal() {
-            let totalGeneral = 0;
-            // Forzar lectura de la base de datos (Backend)
-            try {
-                const res = await fetch('/api/budget');
-                if (res.ok) {
-                    appData = await res.json();
-                } else if (typeof DEFAULT_PRESUPUESTOS !== 'undefined') {
-                    appData = DEFAULT_PRESUPUESTOS;
-                }
-            } catch(e) {
-                if (typeof DEFAULT_PRESUPUESTOS !== 'undefined') {
-                    appData = DEFAULT_PRESUPUESTOS;
-                }
-            }
-            
-            if (appData) {
-                for (let category in appData) {
-                    if (appData[category] && appData[category].categorias) {
-                        appData[category].categorias.forEach(cat => {
-                            cat.items.forEach(item => {
-                                let qty = 1;
-                                if (item.cant) {
-                                    const match = item.cant.toString().match(/\d+/);
-                                    if (match) qty = parseInt(match[0], 10);
-                                }
-                                totalGeneral += (item.precio * qty);
-                            });
-                        });
-                    }
-                }
-            }
-            document.getElementById('global-total-badge').innerText = `Presupuesto Total: $${totalGeneral.toFixed(2)}`;
-        }
-        
-        updateGlobalTotal(); // Ejecutar al cargar
-
-        // Escuchar cuando el iframe recarga para actualizar el total (si el usuario editó)
-        iframe.addEventListener('load', () => {
-            try {
-                // Forzar lectura de localStorage de nuevo por si hubo cambios en la otra vista
-                const raw = localStorage.getItem('appData_presupuesto');
-                if (raw) appData = JSON.parse(raw);
-                updateGlobalTotal();
-            } catch(e) {}
-        });
 
         function loadApp(url, clickedBtn = null) {
             // Hide home, show app

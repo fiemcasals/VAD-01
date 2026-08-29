@@ -330,7 +330,7 @@
                     </div>
                     <div class="spec-card">
                         <div class="spec-label">Sensores</div>
-                        <div class="spec-val">LIDAR 3D + Estéreo</div>
+                        <div class="spec-val">LIDAR 360° + Estéreo</div>
                     </div>
                     <div class="spec-card">
                         <div class="spec-label">Batería</div>
@@ -737,22 +737,54 @@
 
 
         // ==========================================
-        // 4. SENSORS (LIDAR, Stereo Cam)
+        // 4. SENSORS (LIDAR 3D, Stereo Cam)
         // ==========================================
-        // LIDAR 360 on top
+        // LiDAR de Estado Sólido 3D en la parte frontal
         const lidarGrp = new THREE.Group();
-        lidarGrp.position.set(0, yTop + 0.04, 0);
+        lidarGrp.position.set(0, yTop + 0.08, -hd + 0.03); // Adelantado y elevado
         
-        const lidarBase = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.03, 32), matBlack);
-        lidarBase.position.y = 0.015;
+        const lidarMast = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.015, 0.08, 16), matSteel);
+        lidarMast.position.y = -0.04;
+        lidarGrp.add(lidarMast);
+        
+        const lidarBase = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.04, 0.05), matBlack);
         lidarGrp.add(lidarBase);
         
-        const lidarTop = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.025, 32), new THREE.MeshStandardMaterial({color: 0x111111, metalness: 0.8, roughness: 0.2}));
-        lidarTop.position.y = 0.04;
-        lidarGrp.add(lidarTop);
+        const lidarLens = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.02, 0.005), new THREE.MeshStandardMaterial({color: 0x050d1a, metalness: 0.9, roughness: 0.1}));
+        lidarLens.position.set(0, 0, -0.025);
+        lidarGrp.add(lidarLens);
         
+        // FOV Simulador (Estático)
+        const fovGeo = new THREE.ConeGeometry(0.6, 1.5, 4, 1, true);
+        fovGeo.translate(0, -0.75, 0);
+        fovGeo.rotateX(Math.PI / 2);
+        fovGeo.rotateZ(Math.PI / 4);
+        fovGeo.scale(1.5, 0.6, 1.0);
+        const fovMesh = new THREE.Mesh(fovGeo, new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.15, wireframe: true }));
+        fovMesh.rotation.x = -0.25;
+        lidarGrp.add(fovMesh);
+
+        // Línea de barrido activo y estela (Láser simulado barriendo 3D)
+        let laserRayAngleY = 0;
+        let laserRayAngleX = -0.25;
+        let sweepDirY = 1;
+        let sweepDirX = 1;
+        const laserSweepSpeedY = 8.0; 
+        const laserSweepSpeedX = 0.3;  
+        
+        let trailIndex = 0;
+        const trailCount = 100;
+        const trailLines = [];
+        const rayGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1.5)]);
+        for (let i = 0; i < trailCount; i++) {
+            const mat = new THREE.LineBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0 });
+            const line = new THREE.Line(rayGeo, mat);
+            lidarGrp.add(line);
+            trailLines.push(line);
+        }
+
         groupSensors.add(lidarGrp);
-        registerPart(lidarTop, "LiDAR 3D Estado Sólido (Exteriores 20m)", "Genera una nube de puntos 3D para navegación avanzada y evasión de obstáculos en exteriores.", "lidar 3d");
+        registerPart(lidarBase, "LiDAR 3D de Estado Sólido", "Escáner láser direccional de estado sólido montado sobre mástil. Barre hacia adelante el camino con alta resolución.", "lidar 3d");
 
         // Stereo Camera (Front Top Rail)
         const camGrp = new THREE.Group();
@@ -893,11 +925,50 @@
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
 
-            // Rotate Lidar
+            // Animación de barrido 3D del LiDAR de estado sólido
             if (groupSensors.visible) {
-                lidarTop.rotation.y += 5.0 * delta;
-            }
+                // Barrido horizontal
+                laserRayAngleY += laserSweepSpeedY * sweepDirY * delta;
+                if (laserRayAngleY > 0.4) {
+                    laserRayAngleY = 0.4;
+                    sweepDirY = -1;
+                } else if (laserRayAngleY < -0.4) {
+                    laserRayAngleY = -0.4;
+                    sweepDirY = 1;
+                }
 
+                // Barrido vertical
+                laserRayAngleX += laserSweepSpeedX * sweepDirX * delta;
+                if (laserRayAngleX > -0.08) {
+                    laserRayAngleX = -0.08;
+                    sweepDirX = -1;
+                } else if (laserRayAngleX < -0.42) {
+                    laserRayAngleX = -0.42;
+                    sweepDirX = 1;
+                }
+
+                // Generar un nuevo rayo en el pool
+                trailIndex = (trailIndex + 1) % trailCount;
+                const activeLine = trailLines[trailIndex];
+                activeLine.rotation.x = laserRayAngleX;
+                activeLine.rotation.y = laserRayAngleY;
+                activeLine.material.opacity = 0.6;
+                
+                // Desvanecer progresivamente la estela de rayos
+                for (let i = 0; i < trailCount; i++) {
+                    if (trailLines[i].material.opacity > 0) {
+                        trailLines[i].material.opacity -= 0.6 * delta;
+                        if (trailLines[i].material.opacity < 0) {
+                            trailLines[i].material.opacity = 0;
+                        }
+                    }
+                }
+            } else {
+                // Apagar estela si no está visible el grupo de sensores
+                for (let i = 0; i < trailCount; i++) {
+                    trailLines[i].material.opacity = 0;
+                }
+            }
             controls.update();
             renderer.render(scene, camera);
         }
