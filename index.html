@@ -379,13 +379,20 @@
             return match ? parseInt(match[0], 10) : 1;
         }
 
-        function updateGlobalTotal() {
+        async function updateGlobalTotal() {
             let totalGeneral = 0;
             try {
-                const raw = localStorage.getItem('appData_presupuesto');
-                if (raw) localAppData = JSON.parse(raw);
-                else if (typeof DEFAULT_PRESUPUESTOS !== 'undefined') localAppData = DEFAULT_PRESUPUESTOS;
-            } catch(e) {}
+                const res = await fetch('/api/budget');
+                if (res.ok) {
+                    localAppData = await res.json();
+                } else if (typeof DEFAULT_PRESUPUESTOS !== 'undefined') {
+                    localAppData = DEFAULT_PRESUPUESTOS;
+                }
+            } catch(e) {
+                if (typeof DEFAULT_PRESUPUESTOS !== 'undefined') {
+                    localAppData = DEFAULT_PRESUPUESTOS;
+                }
+            }
             
             if (localAppData) {
                 for (let category in localAppData) {
